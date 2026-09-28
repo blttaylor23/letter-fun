@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Letter Fun</title>
 <style>
-  html,body{margin:0;height:100%;font-family:"Comic Sans MS","Chalkboard SE",Arial,sans-serif;user-select:none;-webkit-user-select:none;background:#fff8e7}
+  html,body{touch-action:manipulation;-webkit-touch-callout:none;margin:0;height:100%;font-family:"Comic Sans MS","Chalkboard SE",Arial,sans-serif;user-select:none;-webkit-user-select:none;background:#fff8e7}
   #wrap{display:flex;flex-direction:column;height:100%}
   #top{text-align:center;font-size:22px;color:#777;padding:10px}
   #letterBox{flex:1;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}
   #letter{font-size:min(45vh,60vw);line-height:1;font-weight:bold;transition:transform .15s}
   #letter.pop{transform:scale(1.15)}
   #buttons{display:flex;gap:20px;padding:20px;flex:none}
-  button{flex:1;height:15vh;border:none;border-radius:30px;font-size:60px;color:#fff;cursor:pointer}
+  button{touch-action:manipulation;flex:1;height:15vh;border:none;border-radius:30px;font-size:60px;color:#fff;cursor:pointer}
   #green{background:#2ecc71}#red{background:#e74c3c}
   button:active{transform:scale(.96)}
   #done{display:none;position:fixed;inset:0;background:#2ecc71;color:#fff;font-size:12vw;align-items:center;justify-content:center;text-align:center}
@@ -80,6 +80,10 @@ function celebrate(){
 document.getElementById("letterBox").onclick=say;
 document.getElementById("green").onclick=()=>{greens++; next();};
 document.getElementById("red").onclick=()=>{reds.push(current); next();};
+let lastTouch=0;
+document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<350){e.preventDefault();e.target.click&&e.target.closest&&(e.target.closest("button,#letterBox")||{click(){}}).click();}lastTouch=n;},{passive:false});
+document.addEventListener("dblclick",e=>e.preventDefault());
+document.addEventListener("gesturestart",e=>e.preventDefault());
 startRound();
 </script>
 </body>
