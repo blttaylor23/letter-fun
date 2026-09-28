@@ -51,9 +51,18 @@ function next(){
   top_.textContent="Green: "+greens+" of "+total;
   speechSynthesis.cancel();
 }
+let voice=null;
+function pickVoice(){
+  const vs=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));
+  const prefs=["Samantha","Ava","Allison","Susan","Zoe","Nicky","Aria","Jenny","Michelle","Google US English","Karen","Moira","Tessa","Serena","Victoria","Zira","female"];
+  for(const n of prefs){const v=vs.find(v=>v.name.toLowerCase().includes(n.toLowerCase()));if(v){voice=v;return;}}
+  voice=vs[0]||null;
+}
+pickVoice(); speechSynthesis.onvoiceschanged=pickVoice;
 function speak(text){
   const u=new SpeechSynthesisUtterance(text);
-  u.rate=0.5; u.pitch=1.1; u.lang="en-US";
+  if(voice) u.voice=voice;
+  u.rate=0.75; u.pitch=1.3; u.volume=0.9; u.lang="en-US";
   speechSynthesis.speak(u);
 }
 function say(){
