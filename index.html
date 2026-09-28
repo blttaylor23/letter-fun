@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Letter Fun</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Letters">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#fff8e7">
 <style>
   html,body{touch-action:manipulation;-webkit-touch-callout:none;margin:0;height:100%;font-family:"Comic Sans MS","Chalkboard SE",Arial,sans-serif;user-select:none;-webkit-user-select:none;background:#fff8e7}
   #wrap{display:flex;flex-direction:column;height:100%}
@@ -85,6 +93,7 @@ document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<350){
 document.addEventListener("dblclick",e=>e.preventDefault());
 document.addEventListener("gesturestart",e=>e.preventDefault());
 startRound();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 </script>
 </body>
 </html>
