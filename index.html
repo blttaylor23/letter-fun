@@ -20,7 +20,7 @@
   #letter{font-size:min(45vh,60vw);line-height:1;font-weight:bold;transition:transform .15s}
   #letter.pop{transform:scale(1.15)}
   #buttons{display:flex;gap:20px;padding:20px;flex:none}
-  button{touch-action:manipulation;flex:1;height:15vh;border:none;border-radius:30px;font-size:60px;color:#fff;cursor:pointer}
+  button{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;flex:1;height:15vh;border:none;border-radius:30px;font-size:60px;color:#fff;cursor:pointer}
   #green{background:linear-gradient(to top,#1e8449 var(--p,0%),#2ecc71 var(--p,0%))}#red{background:linear-gradient(to top,#a93226 var(--p,0%),#e74c3c var(--p,0%))}
   button:active{transform:scale(.96)}
   #done{display:none;position:fixed;inset:0;background:#2ecc71;color:#fff;font-size:12vw;align-items:center;justify-content:center;text-align:center}
@@ -38,7 +38,7 @@
 <div id="done">🎉 All green! 🎉</div>
 <script>
 // letter name, then its sound (spelled so the computer voice says it clearly)
-const SOUNDS={a:"ah",b:"buh",c:"kuh",d:"duh",e:"eh",f:"fff",g:"guh",h:"hhuh",i:"ih",j:"juh",k:"kuh",l:"lll",m:"mmm",n:"nnn",o:"ahh",p:"puh",q:"kwuh",r:"rrr",s:"sss",t:"tuh",u:"uhh",v:"vvv",w:"wuh",x:"ks",y:"yuh",z:"zzz"};
+const SOUNDS={a:"ah",b:"buh",c:"kuh",d:"duh",e:"eh",f:"fuh",g:"guh",h:"huh",i:"ih",j:"juh",k:"kuh",l:"luh",m:"muh",n:"nuh",o:"ahh",p:"puh",q:"kwuh",r:"ruh",s:"suh",t:"tuh",u:"uhh",v:"vuh",w:"wuh",x:"ecks",y:"yuh",z:"zuh"};
 const colors=["#e63946","#2a9d8f","#f4a261","#457b9d","#8e44ad","#e76f51","#27ae60","#d81b60"];
 const el=document.getElementById("letter"), top_=document.getElementById("top");
 let taps=0;
@@ -93,9 +93,18 @@ const HOLD_MS=1000;
 function holdButton(id,action){
   const b=document.getElementById(id); let t=null,start=0,raf=null;
   const reset=()=>{clearTimeout(t);cancelAnimationFrame(raf);t=null;b.style.setProperty("--p","0%");};
-  const tick=()=>{const p=Math.min(100,(Date.now()-start)/HOLD_MS*100);b.style.setProperty("--p",p+"%");if(t)raf=requestAnimationFrame(tick);};
-  b.addEventListener("pointerdown",e=>{e.preventDefault();start=Date.now();t=setTimeout(()=>{reset();action();},HOLD_MS);tick();});
-  ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,reset));
+  const tick=()=>{if(!t)return;const p=Math.min(100,(Date.now()-start)/HOLD_MS*100);b.style.setProperty("--p",p+"%");raf=requestAnimationFrame(tick);};
+  const down=e=>{e.preventDefault();e.stopPropagation();if(t)return;start=Date.now();t=setTimeout(()=>{reset();action();},HOLD_MS);tick();};
+  const up=e=>{e.preventDefault();e.stopPropagation();reset();};
+  if("ontouchstart" in window){
+    b.addEventListener("touchstart",down,{passive:false});
+    b.addEventListener("touchend",up,{passive:false});
+    b.addEventListener("touchcancel",up,{passive:false});
+  }else{
+    b.addEventListener("mousedown",down);
+    b.addEventListener("mouseup",up);
+    b.addEventListener("mouseleave",up);
+  }
   b.addEventListener("contextmenu",e=>e.preventDefault());
 }
 holdButton("green",()=>{greens++; next();});
