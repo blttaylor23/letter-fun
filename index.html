@@ -38,9 +38,10 @@
 <div id="done">🎉 All green! 🎉</div>
 <script>
 // letter name, then its sound (spelled so the computer voice says it clearly)
-const SOUNDS={a:"ah",b:"buh",c:"kuh",d:"duh",e:"eh",f:"fff",g:"guh",h:"huh",i:"ih",j:"juh",k:"kuh",l:"lll",m:"mmm",n:"nnn",o:"aw",p:"puh",q:"kwuh",r:"rrr",s:"sss",t:"tuh",u:"uh",v:"vvv",w:"wuh",x:"ks",y:"yuh",z:"zzz"};
+const SOUNDS={a:"ah",b:"buh",c:"kuh",d:"duh",e:"eh",f:"fff",g:"guh",h:"hhuh",i:"ih",j:"juh",k:"kuh",l:"lll",m:"mmm",n:"nnn",o:"ahh",p:"puh",q:"kwuh",r:"rrr",s:"sss",t:"tuh",u:"uhh",v:"vvv",w:"wuh",x:"ks",y:"yuh",z:"zzz"};
 const colors=["#e63946","#2a9d8f","#f4a261","#457b9d","#8e44ad","#e76f51","#27ae60","#d81b60"];
 const el=document.getElementById("letter"), top_=document.getElementById("top");
+let taps=0;
 let queue=[], reds=[], current=null, total=0, greens=0;
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
@@ -53,7 +54,7 @@ function next(){
     if(reds.length===0){ celebrate(); return; }
     queue=shuffle(reds); reds=[];
   }
-  current=queue.shift();
+  current=queue.shift(); taps=0;
   el.textContent=current;
   el.style.color=colors[Math.floor(Math.random()*colors.length)];
   top_.textContent="Green: "+greens+" of "+total;
@@ -76,7 +77,9 @@ function speak(text){
 function say(){
   speechSynthesis.cancel();
   const l=current.toLowerCase();
-  speak(l.toUpperCase()+".");
+  taps++;
+  if(taps%2===1) speak(l.toUpperCase()+".");
+  else speak(SOUNDS[l]);
   el.classList.add("pop"); setTimeout(()=>el.classList.remove("pop"),150);
 }
 function celebrate(){
