@@ -1,4 +1,4 @@
-const C="letter-fun-v15";
+const C="letter-fun-v16";
 const L="abcdefghijklmnopqrstuvwxyz".split("");
 // recorded voices (keep in step with VOICES in index.html; the page also asks us to cache any voice it lists)
 const VOICE_DIRS=["voices/dad/"];
