@@ -1,7 +1,19 @@
-const C="letter-fun-v13";const F=["./","index.html","manifest.json","icon-192.png","icon-512.png","icon-180.png","sounds/a.mp3","sounds/b.mp3","sounds/c.mp3","sounds/d.mp3","sounds/e.mp3","sounds/f.mp3","sounds/g.mp3","sounds/h.mp3","sounds/i.mp3","sounds/j.mp3","sounds/k.mp3","sounds/l.mp3","sounds/m.mp3","sounds/n.mp3","sounds/o.mp3","sounds/p.mp3","sounds/q.mp3","sounds/r.mp3","sounds/s.mp3","sounds/t.mp3","sounds/u.mp3","sounds/v.mp3","sounds/w.mp3","sounds/x.mp3","sounds/y.mp3","sounds/z.mp3"];
-// Install: core files must cache; a sound clip that fails to download must not break the whole install.
-self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>{const core=F.filter(f=>!f.startsWith("sounds/")),snd=F.filter(f=>f.startsWith("sounds/"));return c.addAll(core).then(()=>Promise.all(snd.map(f=>c.add(f).catch(()=>{}))));}));self.skipWaiting();});
+const C="letter-fun-v14";
+const L="abcdefghijklmnopqrstuvwxyz".split("");
+// recorded voices (keep in step with VOICES in index.html; the page also asks us to cache any voice it lists)
+const VOICE_DIRS=["voices/dad/"];
+const PHRASE_FILES=["find","draw","draw_upper","draw_lower","yes","try_again","yes_great_job","keep_going","oops","all_green","speed_slow","speed_normal","speed_fast"];
+const CORE=["./","index.html","manifest.json","icon-192.png","icon-512.png","icon-180.png"];
+const MEDIA=L.map(l=>"sounds/"+l+".mp3").concat(...VOICE_DIRS.map(d=>L.map(l=>d+"names/"+l+".mp3").concat(L.map(l=>d+"sounds/"+l+".mp3"),PHRASE_FILES.map(p=>d+"phrases/"+p+".mp3"))));
+// Install: core files must cache; an audio clip that fails to download must not break the whole install.
+self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(CORE).then(()=>Promise.all(MEDIA.map(f=>c.add(f).catch(()=>{}))))));self.skipWaiting();});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim();});
+// The page sends the full list of voice clips it may play: fetch any we don't have yet (quietly skip failures).
+self.addEventListener("message",e=>{
+  const d=e.data||{}; if(d.type!=="cache-voices"||!Array.isArray(d.files)) return;
+  const files=d.files.filter(f=>typeof f==="string"&&/^voices\/[\w-]+\/(names|sounds|phrases)\/[\w-]+\.mp3$/.test(f)).slice(0,500);
+  e.waitUntil(caches.open(C).then(c=>Promise.all(files.map(f=>c.match(f).then(h=>h||c.add(f).catch(()=>{}))))));
+});
 // Offline copy of an audio file for a Range request (iOS Safari always asks for byte ranges and needs a 206 back).
 async function rangeFromCache(req){
   const hit=await caches.match(req.url,{ignoreSearch:true}); if(!hit) return undefined;

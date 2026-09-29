@@ -54,7 +54,9 @@
   #cRow{display:flex;align-items:center;gap:1.6vmin;flex:none;flex-wrap:wrap;justify-content:center}
   #cRow span{font-size:min(4.8vw,3.4vh,28px);color:#555;font-weight:bold}
   #opts{display:flex;flex-direction:column;align-items:center;gap:1.4vmin;flex:none}
-  @media (orientation:landscape){#opts{flex-direction:row;gap:5vmin}}
+  @media (orientation:landscape){#opts{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:1.4vmin 5vmin}}
+  #wRow{display:flex;align-items:center;gap:1.6vmin;flex:none;justify-content:center}
+  #wRow span{font-size:min(4.8vw,3.4vh,28px);color:#555;font-weight:bold}
   #vRow{display:flex;align-items:center;gap:1.6vmin;flex:none;flex-wrap:wrap;justify-content:center}
   #vRow span{font-size:min(4.8vw,3.4vh,28px);color:#555;font-weight:bold}
   @media (max-width:500px){#cRow span,#vRow span{flex-basis:100%;text-align:center}}
@@ -115,6 +117,7 @@
   <div id="pGrid"></div>
   <div id="opts">
     <div id="cRow"><span>Choices in tests:</span><button class="cn" data-n="4">4</button><button class="cn" data-n="6">6</button><button class="cn" data-n="8">8</button><button class="cn" data-n="10">10</button></div>
+    <div id="wRow"><span>Voice:</span></div>
     <div id="vRow"><span>Voice speed:</span><button class="vs" data-v="slow">🐢 Slow</button><button class="vs" data-v="normal">Normal</button><button class="vs" data-v="fast">🐇 Fast</button></div>
   </div>
   <div id="pBtns">
@@ -197,7 +200,7 @@ function speak(text){
     const u=new SpeechSynthesisUtterance(text);
     if(voice) u.voice=voice;
     u.rate=spd().tts; u.pitch=1.3; u.volume=0.9; u.lang="en-US";
-    spokeOnce=true; lastUtter=u; // keep a reference: Safari drops end events for garbage-collected utterances
+    spokeOnce=true; lastUtter=u; logV("tts:"+text); // keep a reference: Safari drops end events for garbage-collected utterances
     u.onend=u.onerror=()=>{ if(lastUtter===u){ lastUtter=null; clearTimeout(speechWatchT); speechWatchT=null; } };
     if(synth.paused) synth.resume(); // iOS can come back from the background "paused"
     synth.speak(u);
@@ -220,10 +223,73 @@ function playSound(l){
     try{clip.currentTime=0;}catch(e){}
     try{ clip.preservesPitch=true; clip.webkitPreservesPitch=true; clip.mozPreservesPitch=true;
       clip.defaultPlaybackRate=spd().clip; clip.playbackRate=spd().clip; }catch(e){}
+    logV("clip:sounds/"+l+".mp3");
     const p=clip.play(); if(p&&p.catch) p.catch(()=>{});
   }catch(e){ clip=null; }
 }
-function quiet(){ hush(); stopClip(); }
+
+// ---------- voices: a recorded grown-up (Dad; Mom later) or the Computer (speech + sounds/ clips) ----------
+// To add a voice: put its clips in voices/<id>/names/a-z.mp3, sounds/a-z.mp3 and phrases/<key>.mp3 (keys below),
+// then add one entry here. (The service worker also caches every voice listed here for offline use.)
+const VOICES=[
+  {id:"dad", label:"Dad", dir:"voices/dad/"},
+  {id:"computer", label:"Computer", dir:null},
+];
+const WHO_KEY="lf-voice-who";
+let voiceWho=VOICES.some(v=>v.id===lsGet(WHO_KEY,""))?lsGet(WHO_KEY,""):VOICES[0].id;
+function curVoice(){ return VOICES.find(v=>v.id===voiceWho)||VOICES[0]; }
+// what each phrase says (the Computer speaks this text; a recorded voice plays phrases/<key>.mp3)
+const PHRASES={find:"Find the letter", draw:"Draw the letter", draw_upper:"Draw the letter", draw_lower:"Draw the lowercase letter",
+  yes:"Yes!", try_again:"Try again.", yes_great_job:"Yes! Great job!", keep_going:"Keep going!", oops:"Oops! Let's try again.",
+  all_green:"Great job! You got them all!", speed_slow:"This is slow.", speed_normal:"This is normal.", speed_fast:"This is fast."};
+// an utterance is a list of parts: {p:"find"} phrase, {n:"b"} letter name, {s:"b"} letter sound
+function partsText(parts){ return parts.filter(x=>!x.s).map(x=>x.p?PHRASES[x.p]:x.n.toUpperCase()+".").join(" "); }
+function clipUrl(v,x){ return v.dir+(x.p?"phrases/"+x.p:x.n?"names/"+x.n:"sounds/"+x.s)+".mp3"; }
+function voiceFiles(v){ if(!v.dir) return []; const f=[]; for(const l of LETTERS) f.push(v.dir+"names/"+l+".mp3",v.dir+"sounds/"+l+".mp3"); for(const k in PHRASES) f.push(v.dir+"phrases/"+k+".mp3"); return f; }
+const vLog=[]; // which files / speech actually played (checked by the tests)
+function logV(x){ vLog.push(x); if(vLog.length>400) vLog.splice(0,200); }
+const vA=(typeof Audio!=="undefined")?safe(()=>new Audio()):null; // ONE element for recorded clips: once a tap has started it, iOS lets it keep playing from timers
+if(vA) vA.preload="auto";
+let vGen=0, vGapT=null, vWatchT=null;
+function vRate(){ try{ vA.preservesPitch=true; vA.webkitPreservesPitch=true; vA.mozPreservesPitch=true; vA.defaultPlaybackRate=spd().clip; vA.playbackRate=spd().clip; }catch(e){} }
+function stopVoice(){
+  vGen++; clearTimeout(vGapT); clearTimeout(vWatchT); vGapT=vWatchT=null;
+  if(vA) try{ vA.onended=vA.onerror=vA.onplaying=null; vA.pause(); }catch(e){}
+}
+// warm the cache for clips we are about to need (a failed fetch just means it loads on demand)
+const warmed=new Set();
+function preloadParts(parts){
+  const v=curVoice();
+  if(!v.dir){ for(const x of parts) if(x.s) safe(getClip,x.s); return; }
+  for(const x of parts){ const u=clipUrl(v,x); if(warmed.has(u)) continue; warmed.add(u);
+    safe(()=>fetch(u).then(r=>r.ok?r.arrayBuffer():Promise.reject()).catch(()=>warmed.delete(u))); }
+}
+// Computer voice (and the fallback when a recording can't play): speech for words, sounds/ clip for a letter sound
+function computerSay(parts){ const t=partsText(parts), snd=parts.find(x=>x.s); if(t) speak(t); else if(snd) playSound(snd.s); }
+// Say something. Always cancels whatever is playing or queued. Never blocks: game logic runs on its own timers.
+function utter(parts){
+  quiet();
+  const v=curVoice();
+  if(!v.dir||!vA){ computerSay(parts); return; }
+  const gen=vGen; let i=0;
+  const step=()=>{
+    if(gen!==vGen) return;
+    let over=false, started=false; const url=clipUrl(v,parts[i]);
+    const fail=()=>{ if(gen!==vGen||over) return; over=true; const rest=parts.slice(i); stopVoice(); logV("fail:"+url); computerSay(rest); };
+    const done=()=>{ if(gen!==vGen||over) return; over=true; clearTimeout(vWatchT); i++;
+      if(i<parts.length) vGapT=setTimeout(step,Math.round(80*spd().wait)); else vA.onended=vA.onerror=vA.onplaying=null; };
+    try{
+      vA.onerror=fail; vA.onended=done;
+      vA.onplaying=()=>{ if(gen!==vGen||over||started) return; started=true; clearTimeout(vWatchT);
+        const d=(isFinite(vA.duration)&&vA.duration>0)?vA.duration:3; vWatchT=setTimeout(done,Math.round(d/spd().clip*1000+1500)); };
+      vRate(); vA.src=url; vRate(); logV("play:"+url);
+      const pr=vA.play(); if(pr&&pr.catch) pr.catch(err=>{ if(!(err&&err.name==="AbortError")) fail(); });
+      clearTimeout(vWatchT); vWatchT=setTimeout(()=>{ if(!started) fail(); },2500); // not playing yet (slow / offline) -> speak it instead
+    }catch(e){ fail(); }
+  };
+  step();
+}
+function quiet(){ hush(); stopClip(); stopVoice(); }
 
 // ---------- reliable taps ----------
 // Act on touchend (a user gesture on iOS, so audio/speech still unlock). iOS suppresses "click" when a second
@@ -285,13 +351,14 @@ function next(){
   el.style.color=colors[Math.floor(Math.random()*colors.length)];
   top_.textContent="Green: "+greens+" of "+total;
   quiet();
+  const l=current.toLowerCase(), nx=queue[0]&&queue[0].toLowerCase(); preloadParts(nx?[{n:l},{s:l},{n:nx},{s:nx}]:[{n:l},{s:l}]);
 }
 function say(){
   if(mode!=="practice"||!current||celebrating()) return;
   const l=current.toLowerCase();
   taps++;
-  if(taps%2===1) speak(l.toUpperCase()+".");
-  else playSound(l);
+  if(taps%2===1) utter([{n:l}]);
+  else utter([{s:l}]);
   el.classList.add("pop"); setTimeout(()=>el.classList.remove("pop"),150);
 }
 let celebrateT=null, celebrateAt=0;
@@ -305,7 +372,7 @@ function celebrate(){
   doneEl.style.display="flex"; celebrateAt=Date.now();
   // schedule the exit BEFORE speaking, so a speech failure can never leave the overlay up
   clearTimeout(celebrateT); celebrateT=setTimeout(()=>endCelebration(true),4000);
-  quiet(); speak("Great job! You got them all!");
+  utter([{p:"all_green"}]);
 }
 // tapping the celebration screen (after a moment) skips it, so it can never trap the kids
 onTap(doneEl,()=>{ if(Date.now()-celebrateAt>1200) endCelebration(true); });
@@ -346,7 +413,7 @@ function stopAll(){
   drawStop();
 }
 function goHome(){ stopAll(); mode="home"; show("home"); }
-function startPractice(){ stopAll(); mode="practice"; show("wrap"); startRound(); }
+function startPractice(){ stopAll(); mode="practice"; show("wrap"); preloadParts([{p:"all_green"}]); startRound(); }
 onTap(document.getElementById("goPractice"),startPractice);
 onTap(document.getElementById("goUpper"),()=>startTest("upper"));
 onTap(document.getElementById("goLower"),()=>startTest("lower"));
@@ -373,9 +440,9 @@ function startTest(c){
   tCase=(c==="lower")?"lower":"upper";
   tGood=0; tBad=0; tLast=null; showCounts();
   tDeck=buildTestDeck(); tIdx=0;
-  show("test"); askQuestion();
+  show("test"); preloadParts([{p:"yes"},{p:"try_again"}]); askQuestion();
 }
-function promptTest(){ if(mode!=="test"||!tAnswer) return; speak("Find the letter "+tAnswer.toUpperCase()+"."); }
+function promptTest(){ if(mode!=="test"||!tAnswer) return; utter([{p:"find"},{n:tAnswer}]); }
 function askQuestion(){
   tBusy=false; tBusyAt=0;
   if(tIdx>=tDeck.length){ tDeck=buildTestDeck(); tIdx=0; }
@@ -398,7 +465,9 @@ function askQuestion(){
     choicesEl.appendChild(b);
   });
   layoutChoices();
+  preloadParts([{p:"find"},{n:ans}]);
   promptTest();
+  const nx=tDeck[tIdx+1]; if(nx) preloadParts([{n:nx}]); // the next question
 }
 // pick the columns x rows that make the letters biggest for this screen, then size the font to the cell
 function layoutChoices(){
@@ -428,11 +497,11 @@ function choose(b){
     clearTimeout(tNextT); tNextT=setTimeout(advance,Math.round(1300*spd().wait));
     b.classList.add("right");
     const f=document.getElementById("tFlash"); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),350);
-    speak("Yes!");
+    utter([{p:"yes"}]);
   }else{
     tBad++; showCounts(); // every wrong tap counts
     b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); // replay the shake
-    speak("Try again.");
+    utter([{p:"try_again"}]);
   }
 }
 onTap(document.getElementById("speaker"),e=>{e&&e.stopPropagation&&e.stopPropagation(); promptTest();});
@@ -451,10 +520,16 @@ function renderProblems(){
     pGrid.appendChild(b);
   });
 }
-function openSettings(){ stopAll(); mode="settings"; renderProblems(); renderChoiceOpts(); renderVoiceOpts(); show("settings"); }
+function openSettings(){ stopAll(); mode="settings"; renderProblems(); renderChoiceOpts(); renderVoiceOpts(); renderWhoOpts(); show("settings");
+  preloadParts([{p:"speed_slow"},{p:"speed_normal"},{p:"speed_fast"},{p:"find"},{n:"a"}]); }
 onTap(document.getElementById("pClear"),()=>{ problems.clear(); saveProblems(); renderProblems(); });
 function renderVoiceOpts(){ document.querySelectorAll("#vRow button.vs").forEach(b=>{ const on=b.dataset.v===voiceSpeed; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
-document.querySelectorAll("#vRow button.vs").forEach(b=>onTap(b,()=>{ voiceSpeed=b.dataset.v; lsSet(VOICE_KEY,voiceSpeed); renderVoiceOpts(); speak("This is "+voiceSpeed+"."); }));
+document.querySelectorAll("#vRow button.vs").forEach(b=>onTap(b,()=>{ voiceSpeed=b.dataset.v; lsSet(VOICE_KEY,voiceSpeed); renderVoiceOpts(); utter([{p:"speed_"+voiceSpeed}]); }));
+// who speaks: Dad (recorded) / Computer; buttons come from VOICES
+const wRow=document.getElementById("wRow");
+VOICES.forEach(v=>{ const b=document.createElement("button"); b.className="vs vw"; b.dataset.w=v.id; b.textContent=v.label; wRow.appendChild(b);
+  onTap(b,()=>{ voiceWho=v.id; lsSet(WHO_KEY,voiceWho); renderWhoOpts(); utter([{p:"find"},{n:"a"}]); }); });
+function renderWhoOpts(){ wRow.querySelectorAll("button.vw").forEach(b=>{ const on=b.dataset.w===voiceWho; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
 function renderChoiceOpts(){ document.querySelectorAll("#cRow button.cn").forEach(b=>{ const on=+b.dataset.n===nChoices; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
 document.querySelectorAll("#cRow button.cn").forEach(b=>onTap(b,()=>{ nChoices=+b.dataset.n; lsSet(CHOICES_KEY,nChoices); renderChoiceOpts(); }));
 onTap(document.getElementById("pDone"),goHome);
@@ -542,12 +617,12 @@ function pickDrawLetter(){
   return bag[Math.floor(Math.random()*bag.length)]||"a";
 }
 function drawPrompt(){ if(mode!=="draw"||!dLetter) return;
-  speak(dCase==="upper"?"Draw the letter "+dLetter.toUpperCase()+".":"Draw the lowercase letter "+dLetter.toUpperCase()+"."); }
+  utter([{p:dCase==="upper"?"draw_upper":"draw_lower"},{n:dLetter}]); }
 function nextDraw(){
   if(mode!=="draw") return;
   clearTimeout(dNextT); dNextT=null; dPassed=false; dPassedAt=0; dYay.classList.remove("on");
   dPrev=dLetter; dLetter=pickDrawLetter();
-  layoutDraw(); drawGuide(); clearInk(); drawPrompt();
+  layoutDraw(); drawGuide(); clearInk(); preloadParts([{p:dCase==="upper"?"draw_upper":"draw_lower"},{n:dLetter},{p:"yes_great_job"},{p:"keep_going"},{p:"oops"}]); drawPrompt();
 }
 function startDraw(){ stopAll(); mode="draw"; show("draw"); syncDrawToggles(); dLetter=null; nextDraw(); }
 function drawStop(){ clearTimeout(dNextT); dNextT=null; clearTimeout(dCheckT); dCheckT=null; dActive.clear(); dPassed=false; dPassedAt=0; dYay.classList.remove("on"); }
@@ -708,7 +783,7 @@ function evalDrawing(outlineOn, strks){
 function drawSuccess(){
   dPassed=true; dPassedAt=Date.now(); dActive.clear(); clearTimeout(dCheckT); dCheckT=null;
   clearTimeout(dNextT); dNextT=setTimeout(nextDraw,Math.round(1700*spd().wait)); // schedule first: nothing can leave us stuck here
-  dYay.classList.add("on"); speak("Yes! Great job!");
+  dYay.classList.add("on"); utter([{p:"yes_great_job"}]);
 }
 function checkDrawing(fromDone){
   if(mode!=="draw"||dPassed||!strokes.length){ if(fromDone&&mode==="draw"&&!dPassed) drawPrompt(); return; }
@@ -716,8 +791,8 @@ function checkDrawing(fromDone){
   if(r.pass) return drawSuccess();
   if(!fromDone) return; // on finger lift we only ever say "yes" - they may still be drawing
   const rule=dOutline?DRAW_RULES.on:DRAW_RULES.off;
-  if(r.lookalike||r.precision<rule.prec||r.len>rule.len){ speak("Oops! Let's try again."); clearInk(); } // mostly off the letter / scribbled
-  else speak("Keep going!"); // on the letter, just not finished
+  if(r.lookalike||r.precision<rule.prec||r.len>rule.len){ utter([{p:"oops"}]); clearInk(); } // mostly off the letter / scribbled
+  else utter([{p:"keep_going"}]); // on the letter, just not finished
 }
 // --- finger / mouse drawing ---
 function stagePt(e){ const r=inkC.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
@@ -754,12 +829,16 @@ setInterval(()=>safe(()=>{
   if(mode==="draw"&&dPassed&&dPassedAt&&Date.now()-dPassedAt>5000) nextDraw();
 }),1000);
 // iOS: speech/audio are often wedged after the app is backgrounded (home-screen app resumed later). Reset them.
-function onResume(){ safe(()=>{ if(synth){ synth.cancel(); if(synth.paused) synth.resume(); } lastUtter=null; stopClip(); }); }
+function onResume(){ safe(()=>{ if(synth){ synth.cancel(); if(synth.paused) synth.resume(); } lastUtter=null; stopClip(); stopVoice(); }); }
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) safe(quiet); else onResume(); });
 window.addEventListener("pageshow",onResume);
 
 show("home");
-if("serviceWorker" in navigator) safe(()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+if("serviceWorker" in navigator) safe(()=>{
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+  // make sure every voice in VOICES is available offline (sw.js pre-caches Dad; this also covers voices added later)
+  navigator.serviceWorker.ready.then(reg=>{ const files=[].concat(...VOICES.map(voiceFiles)); if(reg.active&&files.length) reg.active.postMessage({type:"cache-voices",files}); }).catch(()=>{});
+});
 </script>
 </body>
 </html>
