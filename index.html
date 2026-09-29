@@ -24,10 +24,56 @@
   #green{background:linear-gradient(to top,#1e8449 var(--p,0%),#2ecc71 var(--p,0%))}#red{background:linear-gradient(to top,#a93226 var(--p,0%),#e74c3c var(--p,0%))}
   button:active{transform:scale(.96)}
   #done{display:none;position:fixed;inset:0;background:#2ecc71;color:#fff;font-size:12vw;align-items:center;justify-content:center;text-align:center}
+  /* screens */
+  .screen{display:none;position:fixed;inset:0;flex-direction:column;background:#fff8e7;box-sizing:border-box}
+  .screen.on{display:flex}
+  .screen:not(.on){display:none !important}
+  #wrap #top{min-height:64px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:10px 80px}
+  #wrap.screen{position:fixed}
+  #home{align-items:center;justify-content:center;gap:4vmin;padding:4vmin}
+  #home h1{margin:0;font-size:min(13vw,12vh);color:#e76f51;text-align:center;line-height:1.1}
+  #home h1 span:nth-child(2){color:#2a9d8f}
+  .homeRow{display:flex;gap:5vmin;width:100%;max-width:1100px;justify-content:center}
+  @media (orientation:portrait){.homeRow{flex-direction:column;align-items:center}}
+  button.big{flex:none;width:min(80vw,440px);height:min(24vh,220px);font-size:min(11vw,9vh,84px);border-radius:40px;box-shadow:0 1vmin 0 rgba(0,0,0,.18);touch-action:manipulation}
+  #goPractice{background:#2ecc71}#goTest{background:#3a86ff}
+  button.big .ico{display:block;font-size:.8em;line-height:1}
+  button.homeBtn{position:absolute;top:10px;left:10px;flex:none;width:64px;height:64px;border-radius:20px;font-size:36px;background:#f4a261;color:#fff;z-index:5;touch-action:manipulation;padding:0;line-height:64px}
+  /* test mode */
+  #test{padding:10px 12px 14px}
+  #tTop{display:flex;align-items:center;justify-content:center;min-height:64px;padding:0 76px;box-sizing:border-box;font-size:min(6vw,4.5vh,40px);color:#777;text-align:center;flex:none}
+  #tPrompt{display:flex;align-items:center;justify-content:center;flex:none;padding:1vh 0}
+  button#speaker{flex:none;width:min(40vw,26vh,240px);height:min(20vw,13vh,120px);border-radius:999px;background:#8e44ad;font-size:min(12vw,8vh,72px);box-shadow:0 .8vmin 0 rgba(0,0,0,.18);touch-action:manipulation}
+  #choices{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2.5vmin;padding:1vmin}
+  @media (min-aspect-ratio:13/10){#choices{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr}}
+  button.choice{flex:none;width:100%;height:100%;min-height:0;min-width:0;background:#fff;border:.8vmin solid #e0d6c2;border-radius:4vmin;font-weight:bold;line-height:1;touch-action:manipulation;overflow:hidden;font-family:inherit;padding:0}
+  #choices button.choice{font-size:min(28vw,26vh)}
+  @media (min-aspect-ratio:13/10){#choices button.choice{font-size:min(17vw,40vh)}}
+  button.choice.right{background:#2ecc71;border-color:#1e8449;color:#fff !important}
+  button.choice.wrong{background:#e74c3c;border-color:#a93226;color:#fff !important;animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4vmin)}40%{transform:translateX(4vmin)}60%{transform:translateX(-3vmin)}80%{transform:translateX(3vmin)}}
+  #tFlash{position:fixed;inset:0;background:#2ecc71;opacity:0;pointer-events:none;transition:opacity .15s}
+  #tFlash.on{opacity:.45}
+  /* score */
+  #score{align-items:center;justify-content:center;gap:3vmin;padding:4vmin;text-align:center}
+  #scoreText{font-size:min(10vw,9vh);color:#2a9d8f;font-weight:bold;line-height:1.15}
+  #stars{font-size:min(8vw,7vh);letter-spacing:.05em;line-height:1.2;max-width:95vw}
+  #stars .off{opacity:.2;filter:grayscale(1)}
+  #scoreBtns{display:flex;gap:4vmin;flex-wrap:wrap;justify-content:center}
+  #scoreBtns button.big{width:min(42vw,360px);height:min(16vh,150px);font-size:min(7vw,6vh,56px)}
+  #again{background:#3a86ff}#scoreHome{background:#f4a261}
 </style>
 </head>
 <body>
-<div id="wrap">
+<div id="home" class="screen on">
+  <h1><span>Letter</span> <span>Fun</span></h1>
+  <div class="homeRow">
+    <button id="goPractice" class="big"><span class="ico">🔤</span>Practice</button>
+    <button id="goTest" class="big"><span class="ico">⭐</span>Test</button>
+  </div>
+</div>
+<div id="wrap" class="screen">
+  <button class="homeBtn" aria-label="Home">🏠</button>
   <div id="top"></div>
   <div id="letterBox"><div id="letter"></div></div>
   <div id="buttons">
@@ -35,10 +81,34 @@
     <button id="green">✓</button>
   </div>
 </div>
+<div id="test" class="screen">
+  <button class="homeBtn" aria-label="Home">🏠</button>
+  <div id="tTop">Question 1 of 10</div>
+  <div id="tPrompt"><button id="speaker" aria-label="Hear it again">🔊</button></div>
+  <div id="choices"></div>
+  <div id="tFlash"></div>
+</div>
+<div id="score" class="screen">
+  <div id="scoreText"></div>
+  <div id="stars"></div>
+  <div id="scoreBtns">
+    <button id="again" class="big">Play again</button>
+    <button id="scoreHome" class="big">🏠 Home</button>
+  </div>
+</div>
 <div id="done">🎉 All green! 🎉</div>
 <script>
-// letter name, then its sound (spelled so the computer voice says it clearly)
-const SOUNDS={a:"ah",b:"buh",c:"kuh",d:"duh",e:"eh",f:"fuh",g:"guh",h:"huh",i:"ih",j:"juh",k:"kuh",l:"luh",m:"muh",n:"nuh",o:"awe",p:"puh",q:"kwuh",r:"ruh",s:"suh",t:"tuh",u:"uh",v:"vuh",w:"wuh",x:"ks",y:"yuh",z:"zuh"};
+// letter name (speech), then its phonics sound (recorded clip in sounds/)
+const LETTERS="abcdefghijklmnopqrstuvwxyz".split("");
+const CLIPS={}; let clip=null;
+LETTERS.forEach(l=>{const a=new Audio("sounds/"+l+".mp3"); a.preload="auto"; CLIPS[l]=a;});
+function stopClip(){ if(clip){ try{clip.pause(); clip.currentTime=0;}catch(e){} clip=null; } }
+function playSound(l){
+  speechSynthesis.cancel(); stopClip();
+  clip=CLIPS[l]||new Audio("sounds/"+l+".mp3");
+  try{clip.currentTime=0;}catch(e){}
+  const p=clip.play(); if(p&&p.catch) p.catch(()=>{});
+}
 const colors=["#e63946","#2a9d8f","#f4a261","#457b9d","#8e44ad","#e76f51","#27ae60","#d81b60"];
 const el=document.getElementById("letter"), top_=document.getElementById("top");
 let taps=0;
@@ -54,7 +124,7 @@ function next(){
     if(reds.length===0){ celebrate(); return; }
     queue=shuffle(reds); reds=[];
   }
-  current=queue.shift(); taps=0;
+  current=queue.shift(); taps=0; stopClip();
   el.textContent=current;
   el.style.color=colors[Math.floor(Math.random()*colors.length)];
   top_.textContent="Green: "+greens+" of "+total;
@@ -75,18 +145,19 @@ function speak(text){
   speechSynthesis.speak(u);
 }
 function say(){
-  speechSynthesis.cancel();
+  speechSynthesis.cancel(); stopClip();
   const l=current.toLowerCase();
   taps++;
   if(taps%2===1) speak(l.toUpperCase()+".");
-  else speak(SOUNDS[l]);
+  else playSound(l);
   el.classList.add("pop"); setTimeout(()=>el.classList.remove("pop"),150);
 }
+let celebrateT=null;
 function celebrate(){
   const d=document.getElementById("done");
   d.style.display="flex";
   speechSynthesis.cancel(); speak("Great job! You got them all!");
-  setTimeout(()=>{d.style.display="none"; startRound();},4000);
+  celebrateT=setTimeout(()=>{celebrateT=null; d.style.display="none"; if(mode==="practice") startRound();},4000);
 }
 document.getElementById("letterBox").onclick=say;
 const HOLD_MS=1000;
@@ -110,10 +181,78 @@ function holdButton(id,action){
 holdButton("green",()=>{greens++; next();});
 holdButton("red",()=>{reds.push(current); next();});
 let lastTouch=0;
-document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<350){e.preventDefault();e.target.click&&e.target.closest&&(e.target.closest("#letterBox")||{click(){}}).click();}lastTouch=n;},{passive:false});
+document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<350){e.preventDefault();e.target.click&&e.target.closest&&(e.target.closest("#letterBox,button.choice,#speaker,button.big,button.homeBtn")||{click(){}}).click();}lastTouch=n;},{passive:false});
 document.addEventListener("dblclick",e=>e.preventDefault());
 document.addEventListener("gesturestart",e=>e.preventDefault());
-startRound();
+// ---------- screens / modes ----------
+let mode="home";
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));}
+function quiet(){speechSynthesis.cancel(); stopClip();}
+function goHome(){
+  quiet(); mode="home"; clearTimeout(tNextT); tNextT=null;
+  if(celebrateT){clearTimeout(celebrateT); celebrateT=null;}
+  document.getElementById("done").style.display="none";
+  show("home");
+}
+function startPractice(){ quiet(); mode="practice"; show("wrap"); startRound(); }
+document.getElementById("goPractice").onclick=startPractice;
+document.getElementById("goTest").onclick=()=>startTest();
+document.querySelectorAll(".homeBtn").forEach(b=>b.onclick=e=>{e.stopPropagation(); goHome();});
+document.getElementById("scoreHome").onclick=goHome;
+document.getElementById("again").onclick=()=>startTest();
+
+// ---------- test mode ----------
+const TEST_N=10;
+let tLetters=[], tIdx=0, tScore=0, tMissed=false, tAnswer=null, tBusy=false, tNextT=null;
+const choicesEl=document.getElementById("choices");
+function startTest(){
+  quiet(); mode="test"; clearTimeout(tNextT);
+  tLetters=shuffle(LETTERS.slice()).slice(0,TEST_N); tIdx=0; tScore=0;
+  show("test"); askQuestion();
+}
+function promptTest(){ if(mode!=="test"||!tAnswer) return; quiet(); speak("Find the letter "+tAnswer.toUpperCase()+"."); }
+function askQuestion(){
+  tBusy=false; tMissed=false;
+  const ans=tLetters[tIdx]; tAnswer=ans;
+  const upper=Math.random()<0.5;
+  const wrong=shuffle(LETTERS.filter(x=>x!==ans)).slice(0,3);
+  const opts=shuffle([ans,...wrong]);
+  document.getElementById("tTop").textContent="Question "+(tIdx+1)+" of "+TEST_N;
+  choicesEl.innerHTML="";
+  opts.forEach((l,i)=>{
+    const b=document.createElement("button");
+    b.className="choice"; b.textContent=upper?l.toUpperCase():l; b.dataset.l=l;
+    b.style.color=colors[(i+tIdx*3)%colors.length];
+    b.onclick=()=>choose(b);
+    b.addEventListener("contextmenu",e=>e.preventDefault());
+    choicesEl.appendChild(b);
+  });
+  promptTest();
+}
+function choose(b){
+  if(mode!=="test"||tBusy||b.classList.contains("wrong")) return;
+  if(b.dataset.l===tAnswer){
+    tBusy=true; if(!tMissed) tScore++;
+    b.classList.add("right");
+    const f=document.getElementById("tFlash"); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),350);
+    quiet(); speak("Yes!");
+    tNextT=setTimeout(()=>{ tNextT=null; if(mode!=="test") return; tIdx++; if(tIdx>=TEST_N) showScore(tScore); else askQuestion(); },1300);
+  }else{
+    tMissed=true;
+    b.classList.add("wrong");
+    quiet(); speak("Try again.");
+  }
+}
+function showScore(n){
+  mode="score"; show("score");
+  document.getElementById("scoreText").textContent="You got "+n+" out of "+TEST_N+"!";
+  let h=""; for(let i=0;i<TEST_N;i++) h+=i<n?"⭐":'<span class="off">⭐</span>';
+  document.getElementById("stars").innerHTML=h;
+  quiet(); speak("You got "+n+" out of "+TEST_N+"!"+(n>=8?" Amazing!":n>=5?" Great job!":" Good try!"));
+}
+document.getElementById("speaker").onclick=e=>{e.stopPropagation(); promptTest();};
+
+show("home");
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 </script>
 </body>

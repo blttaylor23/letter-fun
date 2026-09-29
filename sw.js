@@ -1,4 +1,4 @@
-const C="letter-fun-v8";const F=["./","index.html","manifest.json","icon-192.png","icon-512.png","icon-180.png"];
+const C="letter-fun-v10";const F=["./","index.html","manifest.json","icon-192.png","icon-512.png","icon-180.png","sounds/a.mp3","sounds/b.mp3","sounds/c.mp3","sounds/d.mp3","sounds/e.mp3","sounds/f.mp3","sounds/g.mp3","sounds/h.mp3","sounds/i.mp3","sounds/j.mp3","sounds/k.mp3","sounds/l.mp3","sounds/m.mp3","sounds/n.mp3","sounds/o.mp3","sounds/p.mp3","sounds/q.mp3","sounds/r.mp3","sounds/s.mp3","sounds/t.mp3","sounds/u.mp3","sounds/v.mp3","sounds/w.mp3","sounds/x.mp3","sounds/y.mp3","sounds/z.mp3"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F)));self.skipWaiting();});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim();});
 self.addEventListener("fetch",e=>{e.respondWith(fetch(e.request).then(r=>{const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp));return r;}).catch(()=>caches.match(e.request)));});
