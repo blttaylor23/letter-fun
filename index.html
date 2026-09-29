@@ -481,9 +481,10 @@ function layoutDraw(){
   for(const c of [guideC,inkC]){ c.width=Math.round(dW*dpr); c.height=Math.round(dH*dpr); }
   gctx.setTransform(dpr,0,0,dpr,0,0); ictx.setTransform(dpr,0,0,dpr,0,0);
   dLine=Math.max(14,Math.min(44,Math.min(dW,dH)*0.055));
-  glyphCache.clear();
+  const sizeKey=dW+"x"+dH; if(sizeKey!==glyphSizeKey){ glyphSizeKey=sizeKey; glyphCache.clear(); sameShapeCache=null; } // letter models depend only on the stage size
   if(!dLetter) return;
   dGlyph=glyphLayout(dChar());
+  warmGlyphs();
 }
 // where a character sits when it is the letter to draw (fitted and centred in the stage)
 function glyphLayout(ch){
@@ -494,9 +495,10 @@ function glyphLayout(ch){
   return {ch, font:GLYPH_FONT.replace("100px",(100*k).toFixed(1)+"px"), x:dW/2-(R-L)*k/2, y:dH/2+(A-D)*k/2};
 }
 // ordered centre-line paths of the target letter, in stage pixels (for the dotted tracing guide)
-function glyphPaths(){
-  const S=200/Math.max(dW,dH), w=Math.ceil(dW*S), h=Math.ceil(dH*S);
-  const K=thin(maskOf(c=>{ c.font=dGlyph.font; c.textBaseline="alphabetic"; c.textAlign="left"; c.fillText(dGlyph.ch,dGlyph.x,dGlyph.y); },w,h,S),w,h);
+function glyphPaths(lay,res){
+  lay=lay||dGlyph;
+  const S=(res||200)/Math.max(dW,dH), w=Math.ceil(dW*S), h=Math.ceil(dH*S);
+  const K=thin(maskOf(c=>{ c.font=lay.font; c.textBaseline="alphabetic"; c.textAlign="left"; c.fillText(lay.ch,lay.x,lay.y); },w,h,S),w,h);
   const at=(x,y)=>(x<0||y<0||x>=w||y>=h)?0:K[y*w+x];
   const nb=(x,y)=>{ const r=[]; for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) if((dx||dy)&&at(x+dx,y+dy)) r.push([x+dx,y+dy]); return r; };
   const cells=[]; for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(K[y*w+x]) cells.push([x,y,nb(x,y).length]);
@@ -568,6 +570,17 @@ function maskOf(draw,w,h,S){
   const px=c.getImageData(0,0,w,h).data, m=new Uint8Array(w*h); for(let i=0;i<w*h;i++) m[i]=px[i*4+3]>100?1:0; return m;
 }
 function thin(m,w,h){ // Zhang-Suen thinning -> 1px centre line of the letter (bounded passes)
+  const orig=Uint8Array.from(m), K=thinZS(m,w,h);
+  // a round blob (the dot on i / j) can thin away completely: give every lost piece a centre point
+  const lab=new Int32Array(w*h);
+  for(let s=0;s<w*h;s++){ if(!orig[s]||lab[s]) continue; lab[s]=1; const st=[s], pts=[]; let hit=false, sx=0, sy=0;
+    while(st.length){ const i=st.pop(); pts.push(i); if(K[i]) hit=true; const x=i%w, y=(i-x)/w; sx+=x; sy+=y;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const X=x+dx, Y=y+dy; if(X<0||Y<0||X>=w||Y>=h) continue; const j=Y*w+X; if(orig[j]&&!lab[j]){ lab[j]=1; st.push(j); } } }
+    if(!hit){ const cx=sx/pts.length, cy=sy/pts.length; let b=pts[0], bd=1e9;
+      for(const i of pts){ const x=i%w, y=(i-x)/w, d=(x-cx)*(x-cx)+(y-cy)*(y-cy); if(d<bd){ bd=d; b=i; } } K[b]=1; } }
+  return K;
+}
+function thinZS(m,w,h){
   const at=(x,y)=>(x<0||y<0||x>=w||y>=h)?0:m[y*w+x];
   for(let it=0;it<60;it++){ let changed=false;
     for(let step=0;step<2;step++){ const del=[];
@@ -585,71 +598,111 @@ const DRAW_RULES={ // tuned for 4-year-olds (see test notes)
   // covTol/precTol are fractions of the letter height. cov = share of the letter's centre line the ink passes near;
   // prec = share of the ink that is on/near the letter (extra strokes lower it); len = ink length / centre-line length.
   on: {covTol:0.07, precTol:0.05, cov:0.65, prec:0.80, len:2.4, minLen:0},
-  off:{covTol:0.08, precTol:0.06, cov:0.60, prec:0.75, len:2.2, minLen:0.5, aspect:1.5},
-  margin:0.02}; // a look-alike letter must not fit the drawing better than the target by more than this
-// letters that are easy to draw instead of the target (same case)
-const CONFUSE={
-  C:"OGQ",O:"CQGD",G:"COQ",Q:"OGC",D:"OBP",E:"FB",F:"EPT",P:"RBF",R:"PBK",B:"PRED",I:"TLJ",L:"IE",T:"IFY",J:"IU",
-  U:"VJO",V:"UY",Y:"VXT",M:"NW",N:"MH",H:"NK",K:"RXH",X:"KY",W:"MV",A:"H",S:"Z",Z:"S",
-  a:"odq",b:"dph",d:"bqa",p:"qbn",q:"pdg",g:"q",n:"hmru",h:"nb",m:"nw",u:"vna",v:"uyw",w:"vm",r:"n",
-  c:"oe",o:"ca",e:"co",i:"lj",l:"it",t:"l",y:"vg",k:"hx",x:"k",s:"z",z:"s"};
-// accepted alternative shapes (a plain stick is a fine capital I)
-const ALT={I:"l"};
-const glyphCache=new Map();
+  off:{covTol:0.08, precTol:0.06, cov:0.60, prec:0.75, len:2.2, minLen:0.5, aspect:1.4},
+  margin:0}; // the requested letter must fit the drawing at least as well as every other letter (both cases); ties go to the requested letter
+const ALL52=LETTERS.concat(LETTERS.map(l=>l.toUpperCase()));
+const SAME_CASE_OK="cosvwxz"; // upper/lower look the same: either case is fine
+const ALT={I:"l"}; // accepted alternative shapes (a plain stick is a fine capital I)
+const glyphCache=new Map(); let sameShapeCache=null, warmGen=0, glyphSizeKey="";
+function evalGrid(){ const S=160/Math.max(dW,dH); return {S,w:Math.ceil(dW*S),h:Math.ceil(dH*S)}; }
 function glyphData(ch,w,h,S){ // mask, centre line and distance map of a character, cached per stage size
   const key=ch+"|"+w+"x"+h; let g=glyphCache.get(key); if(g) return g;
-  const lay=(ch===dChar()&&dGlyph)?dGlyph:glyphLayout(ch);
+  const lay=(dGlyph&&ch===dGlyph.ch)?dGlyph:glyphLayout(ch);
   const G=maskOf(c=>{ c.font=lay.font; c.textBaseline="alphabetic"; c.textAlign="left"; c.fillText(ch,lay.x,lay.y); },w,h,S);
   let gx0=w,gy0=h,gx1=-1,gy1=-1,gN=0;
   for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(G[y*w+x]){ gN++; if(x<gx0)gx0=x; if(x>gx1)gx1=x; if(y<gy0)gy0=y; if(y>gy1)gy1=y; }
   const K=gN?thin(Uint8Array.from(G),w,h):new Uint8Array(w*h); let kN=0, kx0=w,ky0=h,kx1=-1,ky1=-1;
   for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(K[y*w+x]){ kN++; if(x<kx0)kx0=x; if(x>kx1)kx1=x; if(y<ky0)ky0=y; if(y>ky1)ky1=y; }
-  g={G,K,gN,kN,Hg:gy1-gy0+1,kbox:[kx0,ky0,kx1,ky1],dGl:gN?chamfer(G,w,h):null};
+  const kIdx=new Int32Array(kN); for(let i=0,j=0;i<w*h;i++) if(K[i]) kIdx[j++]=i;
+  g={ch,G,K,kIdx,gN,kN,Hg:gy1-gy0+1,kbox:[kx0,ky0,kx1,ky1],dGl:gN?chamfer(G,w,h):null,dK:kN?chamfer(K,w,h):null,parts:countParts(G,w,h),lay};
   glyphCache.set(key,g); return g;
 }
-// score one drawing against one character
-function scoreAgainst(ch,outlineOn,strks,w,h,S){
-  const rule=outlineOn?DRAW_RULES.on:DRAW_RULES.off;
-  const res={ch,pass:false,coverage:0,precision:0,len:0,f1:0};
-  const g=glyphData(ch,w,h,S); if(!g.gN||!g.kN) return res;
-  let pts=strks;
-  if(!outlineOn){ // from memory: move/scale the drawing's box onto the letter's centre-line box
-    const [kx0,ky0,kx1,ky1]=g.kbox;
-    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
-    for(const s of strks) for(const [x,y] of s.p){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
-    const bx0=(kx0+.5)/S, bx1=(kx1+.5)/S, by0=(ky0+.5)/S, by1=(ky1+.5)/S;
-    let tw=bx1-bx0, th=by1-by0; const tbig=Math.max(tw,th,1); tw=Math.max(tw,tbig*0.12); th=Math.max(th,tbig*0.12);
-    let iw=x1-x0, ih=y1-y0; const big=Math.max(iw,ih,1); iw=Math.max(iw,big*0.12); ih=Math.max(ih,big*0.12);
-    // trust the drawing's longer side; keep the other scale within "aspect" of it (thin letters like l / i)
-    let sx=tw/iw, sy=th/ih; const ar=rule.aspect||2;
-    if(iw>=ih) sy=Math.min(Math.max(sy,sx/ar),sx*ar); else sx=Math.min(Math.max(sx,sy/ar),sy*ar);
-    const cx=(x0+x1)/2, cy=(y0+y1)/2, tx=(bx0+bx1)/2, ty=(by0+by1)/2;
-    pts=strks.map(s=>({c:s.c,p:s.p.map(([x,y])=>[tx+(x-cx)*sx, ty+(y-cy)*sy])}));
-  }
+// build all 52 letter models in small idle chunks after the stage is laid out, so checking never stalls a tap
+function warmGlyphs(){
+  const gen=++warmGen, todo=ALL52.slice();
+  const step=()=>{ if(gen!==warmGen||mode!=="draw") return; const {S,w,h}=evalGrid(); for(let k=0;k<3&&todo.length;k++) safe(glyphData,todo.shift(),w,h,S); if(todo.length) setTimeout(step,15); };
+  setTimeout(step,300);
+}
+function countParts(M,w,h){ // separate pieces (the i and j dots)
+  const lab=new Uint8Array(w*h); let n=0;
+  for(let s=0;s<w*h;s++){ if(!M[s]||lab[s]) continue; n++; lab[s]=1; const st=[s];
+    while(st.length){ const i=st.pop(), x=i%w, y=(i-x)/w;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const X=x+dx, Y=y+dy; if(X<0||Y<0||X>=w||Y>=h) continue; const j=Y*w+X; if(M[j]&&!lab[j]){ lab[j]=1; st.push(j); } } } }
+  return n;
+}
+function inkData(pts,w,h,S){
   let len=0; for(const s of pts){ if(s.p.length<2){ len+=dLine; continue; } for(let i=1;i<s.p.length;i++) len+=Math.hypot(s.p[i][0]-s.p[i-1][0],s.p[i][1]-s.p[i-1][1]); }
   const I=maskOf(c=>{ for(const s of pts) strokePath(c,s,dLine); },w,h,S);
   let iN=0; for(let i=0;i<w*h;i++) iN+=I[i];
-  if(!iN) return res;
-  const dInk=chamfer(I,w,h), tolCov=rule.covTol*g.Hg, tolPrec=rule.precTol*g.Hg;
-  let cov=0,prec=0; for(let i=0;i<w*h;i++){ if(g.K[i]&&dInk[i]<=tolCov) cov++; if(I[i]&&g.dGl[i]<=tolPrec) prec++; }
-  res.coverage=cov/g.kN; res.precision=prec/iN; res.len=len*S/g.kN;
+  const iIdx=new Int32Array(iN); for(let i=0,j=0;i<w*h;i++) if(I[i]) iIdx[j++]=i;
+  return {iIdx,iN,len,dInk:iN?chamfer(I,w,h):null,parts:countParts(I,w,h)};
+}
+function normalizeFor(g,strks,S,rule){ // from memory: move/scale the drawing's box onto the letter's centre-line box
+  const [kx0,ky0,kx1,ky1]=g.kbox;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const s of strks) for(const [x,y] of s.p){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  const bx0=(kx0+.5)/S, bx1=(kx1+.5)/S, by0=(ky0+.5)/S, by1=(ky1+.5)/S;
+  let tw=bx1-bx0, th=by1-by0; const tbig=Math.max(tw,th,1); tw=Math.max(tw,tbig*0.12); th=Math.max(th,tbig*0.12);
+  let iw=x1-x0, ih=y1-y0; const big=Math.max(iw,ih,1); iw=Math.max(iw,big*0.12); ih=Math.max(ih,big*0.12);
+  // size comes from the letter's long side; the other side may stretch at most "aspect" (so a wide drawing can't pass as a thin letter)
+  let sx=tw/iw, sy=th/ih; const ar=rule.aspect||1.4;
+  if(th>=tw) sx=Math.min(Math.max(sx,sy/ar),sy*ar); else sy=Math.min(Math.max(sy,sx/ar),sx*ar);
+  const cx=(x0+x1)/2, cy=(y0+y1)/2, tx=(bx0+bx1)/2, ty=(by0+by1)/2;
+  return strks.map(s=>({c:s.c,p:s.p.map(([x,y])=>[tx+(x-cx)*sx, ty+(y-cy)*sy])}));
+}
+// score one drawing against one character (ink = drawing already placed in the stage)
+function scoreInk(ch,rule,ink,grid){
+  const {S,w,h}=grid, res={ch,pass:false,coverage:0,precision:0,len:0,f1:0};
+  const g=glyphData(ch,w,h,S); if(!g.gN||!g.kN||!ink.iN) return res;
+  const tolCov=rule.covTol*g.Hg, tolPrec=rule.precTol*g.Hg;
+  let cov=0,prec=0,dc=0,dp=0;
+  for(const i of g.kIdx){ const d=ink.dInk[i]; if(d<=tolCov) cov++; dc+=Math.min(d,g.Hg); }
+  for(const i of ink.iIdx){ if(g.dGl[i]<=tolPrec) prec++; dp+=Math.min(g.dK[i],g.Hg); }
+  res.coverage=cov/g.kN; res.precision=prec/ink.iN; res.len=ink.len*S/g.kN;
   res.f1=(res.coverage+res.precision)?2*res.coverage*res.precision/(res.coverage+res.precision):0;
+  // for ranking letters against each other: f1 saturates at 1 for close letters, so also count how far the drawing
+  // strays from each letter's centre line, and whether it has the right number of separate pieces (the i / j dot)
+  res.score=res.f1-(dc/g.kN+dp/ink.iN)/g.Hg-(ink.parts===g.parts?0:0.03);
   res.pass=res.coverage>=rule.cov&&res.precision>=rule.prec&&res.len<=rule.len&&res.len>=(rule.minLen||0);
   return res;
+}
+// ink for comparing with `ch`: as drawn (outline on) or moved/scaled onto ch's box (from memory)
+function inkFor(ch,outlineOn,strks,grid){
+  const {S,w,h}=grid; if(outlineOn) return inkData(strks,w,h,S);
+  return inkData(normalizeFor(glyphData(ch,w,h,S),strks,S,DRAW_RULES.off),w,h,S);
+}
+function scoreAgainst(ch,outlineOn,strks,grid){ return scoreInk(ch,outlineOn?DRAW_RULES.on:DRAW_RULES.off,inkFor(ch,outlineOn,strks,grid),grid); }
+// letters whose two cases look alike once fitted to the drawing area (so either case is fine)
+function sameShapeOk(ch){
+  if(SAME_CASE_OK.includes(ch.toLowerCase())) return true;
+  if(!sameShapeCache){
+    sameShapeCache=new Set(); const grid=evalGrid();
+    for(const l of LETTERS){ const U=l.toUpperCase(); let ok=true;
+      for(const [a,b] of [[l,U],[U,l]]){ const ga=glyphData(a,grid.w,grid.h,grid.S);
+        const tr=glyphPaths(ga.lay,120).filter(p=>p.length>=1).map(p=>({c:"#000",p}));
+        if(!tr.length||scoreAgainst(b,true,tr,grid).f1<0.93){ ok=false; break; } }
+      if(ok) sameShapeCache.add(l); }
+  }
+  return sameShapeCache.has(ch.toLowerCase());
 }
 function evalDrawing(outlineOn, strks){
   strks=strks||strokes;
   const empty={pass:false,coverage:0,precision:0,len:0,f1:0};
   if(!dGlyph||!strks.length) return empty;
-  const S=160/Math.max(dW,dH), w=Math.ceil(dW*S), h=Math.ceil(dH*S), ch=dChar();
-  let res=scoreAgainst(ch,outlineOn,strks,w,h,S);
-  for(const a of (ALT[ch]||"")){ const r=scoreAgainst(a,outlineOn,strks,w,h,S); if(r.pass&&(!res.pass||r.f1>res.f1)) res=Object.assign(r,{ch}); }
+  const grid=evalGrid(), ch=dChar(), other=ch===ch.toUpperCase()?ch.toLowerCase():ch.toUpperCase();
+  const rule=outlineOn?DRAW_RULES.on:DRAW_RULES.off;
+  const ok=[ch,...(ALT[ch]||"")]; if(sameShapeOk(ch)) ok.push(other);
+  const raw=inkData(strks,grid.w,grid.h,grid.S);
+  const sc=c=>{ const ink=outlineOn?raw:inkFor(c,false,strks,grid); ink.parts=raw.parts; return scoreInk(c,rule,ink,grid); };
+  let res=null;
+  for(const a of ok){ const r=sc(a); if(!res||(r.pass&&!res.pass)||(r.pass===res.pass&&r.score>res.score)) res=r; }
+  res.ch=ch;
   if(!res.pass) return res;
-  // look-alike check: fail if another letter fits the drawing noticeably better (O drawn for C, E for F ...)
-  for(const c of (CONFUSE[ch]||"")){
-    const r=scoreAgainst(c,outlineOn,strks,w,h,S);
-    if(r.f1>res.f1+DRAW_RULES.margin){ res.pass=false; res.lookalike=c; res.lookalikeF1=r.f1; break; }
-  }
+  // It must look at least as much like the requested letter as like ANY other letter, upper or lower case (F drawn for e, O for C...)
+  let rival=null;
+  for(const c of ALL52){ if(ok.includes(c)) continue; const r=sc(c); if(!rival||r.score>rival.score) rival=r; }
+  res.rival=rival.ch; res.rivalScore=rival.score; res.gap=res.score-rival.score;
+  if(res.gap<DRAW_RULES.margin){ res.pass=false; res.lookalike=rival.ch; }
   return res;
 }
 function drawSuccess(){
