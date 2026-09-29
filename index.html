@@ -33,11 +33,13 @@
   #home{align-items:center;justify-content:center;gap:4vmin;padding:4vmin}
   #home h1{margin:0;font-size:min(13vw,12vh);color:#e76f51;text-align:center;line-height:1.1}
   #home h1 span:nth-child(2){color:#2a9d8f}
-  .homeRow{display:flex;gap:5vmin;width:100%;max-width:1100px;justify-content:center}
-  @media (orientation:portrait){.homeRow{flex-direction:column;align-items:center}}
+  .homeRow{display:flex;gap:4vmin;width:100%;max-width:1200px;justify-content:center}
   button.big{flex:none;width:min(80vw,440px);height:min(24vh,220px);font-size:min(11vw,9vh,84px);border-radius:40px;box-shadow:0 1vmin 0 rgba(0,0,0,.18);touch-action:manipulation}
-  #goPractice{background:#2ecc71}#goTest{background:#3a86ff}
+  .homeRow button.big{width:min(29vw,360px);height:min(46vh,300px);font-size:min(5.2vw,8vh,52px);line-height:1.1;padding:0 1vmin;font-family:inherit;font-weight:bold}
+  @media (orientation:portrait){.homeRow{flex-direction:column;align-items:center}.homeRow button.big{width:min(84vw,460px);height:min(20vh,200px);font-size:min(9vw,5vh,56px)}}
+  #goPractice{background:#2ecc71}#goUpper{background:#3a86ff}#goLower{background:#8e44ad}
   button.big .ico{display:block;font-size:.8em;line-height:1}
+  .homeRow button.big .ico{font-size:1.5em;margin-bottom:.1em}
   button.homeBtn{position:absolute;top:10px;left:10px;flex:none;width:64px;height:64px;border-radius:20px;font-size:36px;background:#f4a261;color:#fff;z-index:5;touch-action:manipulation;padding:0;line-height:64px}
   /* test mode */
   #test{padding:10px 12px 14px}
@@ -56,8 +58,9 @@
   #tFlash.on{opacity:.45}
   /* score */
   #score{align-items:center;justify-content:center;gap:3vmin;padding:4vmin;text-align:center}
-  #scoreText{font-size:min(10vw,9vh);color:#2a9d8f;font-weight:bold;line-height:1.15}
-  #stars{font-size:min(8vw,7vh);letter-spacing:.05em;line-height:1.2;max-width:95vw}
+  #scoreText{font-size:min(9vw,9vh);color:#2a9d8f;font-weight:bold;line-height:1.15}
+  #stars{display:grid;grid-template-columns:repeat(13,auto);justify-content:center;gap:.15em .2em;font-size:min(5.6vw,7vh,52px);line-height:1.1;max-width:95vw}
+  @media (orientation:portrait){#stars{grid-template-columns:repeat(9,auto);font-size:min(7vw,5vh,56px)}}
   #stars .off{opacity:.2;filter:grayscale(1)}
   #scoreBtns{display:flex;gap:4vmin;flex-wrap:wrap;justify-content:center}
   #scoreBtns button.big{width:min(42vw,360px);height:min(16vh,150px);font-size:min(7vw,6vh,56px)}
@@ -69,7 +72,8 @@
   <h1><span>Letter</span> <span>Fun</span></h1>
   <div class="homeRow">
     <button id="goPractice" class="big"><span class="ico">🔤</span>Practice</button>
-    <button id="goTest" class="big"><span class="ico">⭐</span>Test</button>
+    <button id="goUpper" class="big"><span class="ico">ABC</span>Uppercase Test</button>
+    <button id="goLower" class="big"><span class="ico">abc</span>Lowercase Test</button>
   </div>
 </div>
 <div id="wrap" class="screen">
@@ -83,7 +87,7 @@
 </div>
 <div id="test" class="screen">
   <button class="homeBtn" aria-label="Home">🏠</button>
-  <div id="tTop">Question 1 of 10</div>
+  <div id="tTop">1 / 26</div>
   <div id="tPrompt"><button id="speaker" aria-label="Hear it again">🔊</button></div>
   <div id="choices"></div>
   <div id="tFlash"></div>
@@ -196,28 +200,31 @@ function goHome(){
 }
 function startPractice(){ quiet(); mode="practice"; show("wrap"); startRound(); }
 document.getElementById("goPractice").onclick=startPractice;
-document.getElementById("goTest").onclick=()=>startTest();
+document.getElementById("goUpper").onclick=()=>startTest("upper");
+document.getElementById("goLower").onclick=()=>startTest("lower");
 document.querySelectorAll(".homeBtn").forEach(b=>b.onclick=e=>{e.stopPropagation(); goHome();});
 document.getElementById("scoreHome").onclick=goHome;
-document.getElementById("again").onclick=()=>startTest();
+document.getElementById("again").onclick=()=>startTest(tCase);
 
 // ---------- test mode ----------
-const TEST_N=10;
+const TEST_N=LETTERS.length; // every letter exactly once
+let tCase="upper";
 let tLetters=[], tIdx=0, tScore=0, tMissed=false, tAnswer=null, tBusy=false, tNextT=null;
 const choicesEl=document.getElementById("choices");
-function startTest(){
-  quiet(); mode="test"; clearTimeout(tNextT);
-  tLetters=shuffle(LETTERS.slice()).slice(0,TEST_N); tIdx=0; tScore=0;
+function startTest(c){
+  quiet(); mode="test"; clearTimeout(tNextT); tNextT=null;
+  tCase=(c==="lower")?"lower":"upper";
+  tLetters=shuffle(LETTERS.slice()); tIdx=0; tScore=0;
   show("test"); askQuestion();
 }
 function promptTest(){ if(mode!=="test"||!tAnswer) return; quiet(); speak("Find the letter "+tAnswer.toUpperCase()+"."); }
 function askQuestion(){
   tBusy=false; tMissed=false;
   const ans=tLetters[tIdx]; tAnswer=ans;
-  const upper=Math.random()<0.5;
+  const upper=tCase==="upper";
   const wrong=shuffle(LETTERS.filter(x=>x!==ans)).slice(0,3);
   const opts=shuffle([ans,...wrong]);
-  document.getElementById("tTop").textContent="Question "+(tIdx+1)+" of "+TEST_N;
+  document.getElementById("tTop").textContent=(tIdx+1)+" / "+TEST_N;
   choicesEl.innerHTML="";
   opts.forEach((l,i)=>{
     const b=document.createElement("button");
@@ -246,9 +253,9 @@ function choose(b){
 function showScore(n){
   mode="score"; show("score");
   document.getElementById("scoreText").textContent="You got "+n+" out of "+TEST_N+"!";
-  let h=""; for(let i=0;i<TEST_N;i++) h+=i<n?"⭐":'<span class="off">⭐</span>';
+  let h=""; for(let i=0;i<TEST_N;i++) h+=i<n?'<span class="on">⭐</span>':'<span class="off">⭐</span>';
   document.getElementById("stars").innerHTML=h;
-  quiet(); speak("You got "+n+" out of "+TEST_N+"!"+(n>=8?" Amazing!":n>=5?" Great job!":" Good try!"));
+  quiet(); speak("You got "+n+" out of "+TEST_N+"!"+(n>=21?" Amazing!":n>=13?" Great job!":" Good try!"));
 }
 document.getElementById("speaker").onclick=e=>{e.stopPropagation(); promptTest();};
 
