@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Letter Fun</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -13,24 +13,27 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#fff8e7">
 <style>
+  /* iOS safe areas (notch, status bar, home indicator): every screen pads itself by these */
+  :root{--sat:env(safe-area-inset-top,0px);--sar:env(safe-area-inset-right,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px)}
   html,body{touch-action:manipulation;-webkit-touch-callout:none;margin:0;height:100%;font-family:"Comic Sans MS","Chalkboard SE",Arial,sans-serif;user-select:none;-webkit-user-select:none;background:#fff8e7}
   #wrap{display:flex;flex-direction:column;height:100%}
   #top{text-align:center;font-size:22px;color:#777;padding:10px}
   #letterBox{flex:1;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}
-  #letter{font-size:min(45vh,60vw);line-height:1;font-weight:bold;transition:transform .15s}
+  #letter{font-size:min(45vh,60vw);line-height:1;font-weight:bold;transition:transform .15s;box-sizing:content-box}
   #letter.pop{transform:scale(1.15)}
   #buttons{display:flex;gap:20px;padding:20px;flex:none}
+  #buttons button{font-size:min(60px,11vh);line-height:1}
   button{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;flex:1;height:15vh;border:none;border-radius:30px;font-size:60px;color:#fff;cursor:pointer}
   #green{background:linear-gradient(to top,#1e8449 var(--p,0%),#2ecc71 var(--p,0%))}#red{background:linear-gradient(to top,#a93226 var(--p,0%),#e74c3c var(--p,0%))}
   button:active{transform:scale(.96)}
-  #done{display:none;position:fixed;inset:0;background:#2ecc71;color:#fff;font-size:12vw;align-items:center;justify-content:center;text-align:center}
+  #done{display:none;position:fixed;inset:0;padding:var(--sat) var(--sar) var(--sab) var(--sal);box-sizing:border-box;background:#2ecc71;color:#fff;font-size:12vw;align-items:center;justify-content:center;text-align:center}
   /* screens */
   .screen{display:none;position:fixed;inset:0;flex-direction:column;background:#fff8e7;box-sizing:border-box}
   .screen.on{display:flex}
   .screen:not(.on){display:none !important}
   #wrap #top{min-height:64px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:10px 80px}
-  #wrap.screen{position:fixed}
-  #home{align-items:center;justify-content:center;gap:4vmin;padding:4vmin}
+  #wrap.screen{position:fixed;padding:var(--sat) var(--sar) var(--sab) var(--sal)}
+  #home{align-items:center;justify-content:center;gap:4vmin;padding:calc(4vmin + var(--sat)) calc(4vmin + var(--sar)) calc(4vmin + var(--sab)) calc(4vmin + var(--sal))}
   #home h1{margin:0;font-size:min(13vw,12vh);color:#e76f51;text-align:center;line-height:1.1}
   #home h1 span:nth-child(2){color:#2a9d8f}
   .homeRow{display:grid;grid-template-columns:repeat(4,1fr);gap:3vmin;width:100%;max-width:1400px}
@@ -38,9 +41,9 @@
   .homeRow button.big{width:100%;height:min(46vh,300px);font-size:min(3.6vw,7vh,46px);line-height:1.1;padding:0 1vmin;font-family:inherit;font-weight:bold}
   @media (orientation:portrait){.homeRow{grid-template-columns:1fr 1fr;max-width:720px}.homeRow button.big{height:min(25vh,280px);font-size:min(6.2vw,4.4vh,48px)}}
   #goPractice{background:#2ecc71}#goUpper{background:#3a86ff}#goLower{background:#8e44ad}#goDraw{background:#e76f51}
-  button#gear{position:absolute;top:12px;right:12px;flex:none;width:58px;height:58px;padding:0;border-radius:50%;font-size:30px;line-height:58px;color:#fff;background:#c9bfae;opacity:.75;touch-action:manipulation}
+  button#gear{position:absolute;top:calc(12px + var(--sat));right:calc(12px + var(--sar));flex:none;width:58px;height:58px;padding:0;border-radius:50%;font-size:30px;line-height:58px;color:#fff;background:#c9bfae;opacity:.75;touch-action:manipulation}
   /* settings (problem letters) */
-  #settings{align-items:center;gap:2vmin;padding:3vmin}
+  #settings{align-items:center;gap:2vmin;padding:calc(3vmin + var(--sat)) calc(3vmin + var(--sar)) calc(3vmin + var(--sab)) calc(3vmin + var(--sal))}
   #settings h2{margin:0;font-size:min(8vw,6vh,52px);color:#e76f51}
   #settings .hint{margin:0;font-size:min(4.5vw,3vh,26px);color:#777;text-align:center}
   #pGrid{flex:1;min-height:0;width:100%;max-width:1200px;display:grid;grid-template-columns:repeat(5,1fr);gap:1.6vmin}
@@ -65,9 +68,9 @@
   button.cn{flex:none;width:max(44px,min(15vw,9vh,76px));height:max(36px,min(11vw,7vh,56px));padding:0;border-radius:2vmin;background:#fff;border:.5vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(6vw,4vh,32px);touch-action:manipulation}
   button.cn.on{background:#3a86ff;border-color:#2a64c0;color:#fff}
   /* draw mode */
-  #draw{padding:10px 12px 12px}
-  #dTop{display:flex;align-items:center;justify-content:center;gap:12px;min-height:64px;padding:0 8px 0 80px;box-sizing:border-box;flex:none;flex-wrap:wrap}
-  button.pill{flex:none;height:52px;padding:0 18px;border-radius:26px;font-size:min(5.5vw,26px);font-family:inherit;font-weight:bold;background:#3a86ff;touch-action:manipulation}
+  #draw{padding:calc(10px + var(--sat)) calc(12px + var(--sar)) calc(12px + var(--sab)) calc(12px + var(--sal))}
+  #dTop{display:flex;align-items:center;justify-content:center;gap:12px;min-height:64px;padding:0 8px 0 80px;box-sizing:border-box;flex:none;flex-wrap:nowrap;min-width:0}
+  button.pill{flex:none;white-space:nowrap;height:52px;padding:0 min(18px,3.2vw);border-radius:26px;font-size:min(5vw,26px);font-family:inherit;font-weight:bold;background:#3a86ff;touch-action:manipulation}
   #dOutline{background:#2a9d8f}#dOutline.off{background:#999}
   #dStage{flex:1;min-height:0;position:relative;margin:8px 0 10px;background:#fff;border-radius:4vmin;border:.8vmin solid #e0d6c2;overflow:hidden;touch-action:none}
   #dStage canvas{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none}
@@ -80,20 +83,20 @@
   @media (max-width:600px){#dBtns .w{display:none}}
   button.big .ico{display:block;font-size:.8em;line-height:1}
   .homeRow button.big .ico{font-size:1.5em;margin-bottom:.1em}
-  button.homeBtn{position:absolute;top:10px;left:10px;flex:none;width:64px;height:64px;border-radius:20px;font-size:36px;background:#f4a261;color:#fff;z-index:5;touch-action:manipulation;padding:0;line-height:64px}
+  button.homeBtn{position:absolute;top:calc(10px + var(--sat));left:calc(10px + var(--sal));flex:none;width:64px;height:64px;border-radius:20px;font-size:36px;background:#f4a261;color:#fff;z-index:5;touch-action:manipulation;padding:0;line-height:64px}
   /* test mode */
-  #test{padding:10px 12px 14px}
+  #test{padding:calc(10px + var(--sat)) calc(12px + var(--sar)) calc(14px + var(--sab)) calc(12px + var(--sal))}
   #tTop{display:flex;align-items:center;justify-content:space-between;min-height:64px;padding:0 6px 0 84px;box-sizing:border-box;flex:none;gap:12px}
   .count{font-size:min(13vw,9vh,88px);font-weight:bold;line-height:1;font-variant-numeric:tabular-nums;min-width:1.2em}
   #tGood{color:#27ae60;text-align:left}#tBad{color:#e74c3c;text-align:right}
   /* wide screens: the replay button sits between the counters, leaving more room for the letters */
-  @media (min-aspect-ratio:13/10){#tPrompt{position:absolute;top:8px;left:50%;transform:translateX(-50%);padding:0;z-index:4}
+  @media (min-aspect-ratio:13/10){#tPrompt{position:absolute;top:calc(8px + var(--sat));left:50%;transform:translateX(-50%);padding:0;z-index:4}
     #test #tPrompt button#speaker{height:56px;width:min(24vw,190px);font-size:34px}.count{font-size:min(9vw,13vh,80px)}}
   #tPrompt{display:flex;align-items:center;justify-content:center;flex:none;padding:1vh 0}
   button#speaker{flex:none;width:min(40vw,26vh,240px);height:min(20vw,13vh,120px);border-radius:999px;background:#8e44ad;font-size:min(12vw,8vh,72px);box-shadow:0 .8vmin 0 rgba(0,0,0,.18);touch-action:manipulation}
   #choices{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2vmin;padding:1vmin;box-sizing:border-box}
-  button.choice{flex:none;width:100%;height:100%;min-height:0;min-width:0;background:#fff;border:.8vmin solid #e0d6c2;border-radius:4vmin;font-weight:bold;line-height:1;touch-action:manipulation;overflow:hidden;font-family:inherit;padding:0}
-  #choices button.choice{font-size:var(--fs,min(28vw,26vh))}
+  button.choice{flex:none;width:100%;height:100%;min-height:0;min-width:0;background:#fff;border:.8vmin solid #e0d6c2;border-radius:4vmin;font-weight:bold;line-height:.5;touch-action:manipulation;overflow:hidden;font-family:inherit;padding:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap}
+  #choices button.choice{font-size:var(--fs,min(28vw,26vh));padding:var(--pt,0px) 0 var(--pb,0px)}
   button.choice.right{background:#2ecc71;border-color:#1e8449;color:#fff !important}
   button.choice.wrong{background:#e74c3c;border-color:#a93226;color:#fff !important;animation:shake .4s}
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4vmin)}40%{transform:translateX(4vmin)}60%{transform:translateX(-3vmin)}80%{transform:translateX(3vmin)}}
@@ -359,7 +362,7 @@ function next(){
     queue=shuffle(reds); reds=[];
   }
   current=queue.shift(); taps=0;
-  el.textContent=current;
+  el.textContent=current; fitPractice();
   el.style.color=colors[Math.floor(Math.random()*colors.length)];
   top_.textContent="Green: "+greens+" of "+total;
   quiet();
@@ -446,7 +449,7 @@ function buildTestDeck(){
   }
   return d;
 }
-function showCounts(){ tGoodEl.textContent=tGood; tBadEl.textContent=tBad; }
+function showCounts(){ tGoodEl.textContent=tGood; tBadEl.textContent=tBad; fitCounters(); }
 function startTest(c){
   stopAll(); mode="test";
   tCase=(c==="lower")?"lower":"upper";
@@ -482,20 +485,84 @@ function askQuestion(){
   promptTest();
   const nx=tDeck[tIdx+1]; if(nx) preloadParts([{p:"find"},{n:nx}]); // the next question
 }
-// pick the columns x rows that make the letters biggest for this screen, then size the font to the cell
+// ---------- letter sizing from the real font's ink ----------
+// Fonts differ a lot (Chalkboard SE on iPad has tall ascent and deep g j p q y tails), so we measure the actual
+// ink of the letters with this device's font instead of guessing: how far they reach left/right of centre and
+// above/below the baseline (in em), plus the font ascent/descent that decide where the baseline sits in the line box.
+const inkCache={};
+function inkOf(chars,fam){
+  const key=fam+"|"+chars; if(inkCache[key]) return inkCache[key];
+  let r=null;
+  try{
+    const c=document.createElement("canvas").getContext("2d"), S=1000; /* large, so rounding of the metrics is negligible */ c.font="bold "+S+"px "+fam;
+    let half=0,asc=0,desc=0,A=0,D=0,tall=0; const per={};
+    for(const ch of chars){ const m=c.measureText(ch);
+      if(typeof m.actualBoundingBoxAscent!=="number"||!(m.fontBoundingBoxAscent>0)) throw 0;
+      half=Math.max(half,m.width/2+m.actualBoundingBoxLeft,m.actualBoundingBoxRight-m.width/2);
+      asc=Math.max(asc,m.actualBoundingBoxAscent); desc=Math.max(desc,m.actualBoundingBoxDescent);
+      tall=Math.max(tall,m.actualBoundingBoxAscent+m.actualBoundingBoxDescent); per[ch]=[m.actualBoundingBoxAscent/S,m.actualBoundingBoxDescent/S,((m.actualBoundingBoxRight-m.actualBoundingBoxLeft)/2-m.width/2)/S];
+      A=m.fontBoundingBoxAscent; D=m.fontBoundingBoxDescent; }
+    r={half:half/S,asc:asc/S,desc:desc/S,A:A/S,D:D/S,tall:tall/S,per};
+    if(!(r.half>0&&r.asc>0)) r=null;
+  }catch(e){ r=null; }
+  if(!r) r={half:.62,asc:1.02,desc:.42,A:1.0,D:.36,tall:1.44,per:{}}; // old browser without text metrics: size generously small
+  return inkCache[key]=r;
+}
+if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener("loadingdone",()=>{ for(const k in inkCache) delete inkCache[k]; if(mode==="test") layoutChoices(); if(mode==="practice") fitPractice(); });
+const UPPERS=LETTERS.join("").toUpperCase(), LOWERS=LETTERS.join("");
+// font size + vertical shift (px) that fit the ink of every letter in a w x h box with margin m, ink box centred
+function inkFit(ink,w,h,m,maxFs){
+  let fs=Math.min((w-2*m)/(2*ink.half),(h-2*m)/(ink.asc+ink.desc)); if(maxFs) fs=Math.min(fs,maxFs); fs=Math.max(8,Math.floor(fs));
+  // whatever the line-height, the baseline sits (A-D)/2 below the line box centre; move the ink's centre onto the box centre
+  const dy=-((ink.A-ink.D)/2+(ink.desc-ink.asc)/2)*fs;
+  return {fs,dy};
+}
+// keep the score numbers clear of the 🔊 and 🏠 buttons (and each other) whatever the font and score
+function fitCounters(){
+  const sp=document.getElementById("speaker"), hb=document.querySelector("#test .homeBtn");
+  tGoodEl.style.fontSize=""; tBadEl.style.fontSize="";
+  if(mode!=="test") return;
+  const R=e=>e.getBoundingClientRect(), T=e=>{ const g=document.createRange(); g.selectNodeContents(e); return g.getBoundingClientRect(); };
+  const hit=(a,b)=>a.width>0&&b.width>0&&Math.min(a.right,b.right)-Math.max(a.left,b.left)>-4&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>-4;
+  for(let k=0;k<14;k++){ const g=T(tGoodEl), b=T(tBadEl), s=R(sp), h=R(hb);
+    if(!(hit(g,s)||hit(b,s)||hit(g,h)||hit(b,h)||hit(g,b))) break;
+    for(const c of [tGoodEl,tBadEl]) c.style.fontSize=Math.max(14,parseFloat(getComputedStyle(c).fontSize)*0.88)+"px"; }
+}
+// pick the columns x rows that give the biggest tiles for this screen, then size the font so every letter's ink
+// (tails of g j p q y, tall b d f h k l t, the i/j dots, wide W M) fits inside the tile border with a margin
 function layoutChoices(){
+  fitCounters();
   const n=choicesEl.children.length; if(!n) return;
   const r=choicesEl.getBoundingClientRect(); if(!r.width||!r.height) return;
-  const gap=Math.min(window.innerWidth,window.innerHeight)*0.02, pad=Math.min(window.innerWidth,window.innerHeight)*0.02;
+  const vmin=Math.min(window.innerWidth,window.innerHeight), gap=vmin*0.02, pad=vmin*0.02, bw=vmin*0.008, rad=Math.max(0,vmin*0.04-bw);
+  const ink=inkOf(tCase==="upper"?UPPERS:LOWERS,getComputedStyle(choicesEl).fontFamily);
   const W=r.width-pad, H=r.height-pad;
   let best=null;
   for(let cols=1;cols<=n;cols++){ const rows=Math.ceil(n/cols); if(cols*rows!==n) continue; // full grid only: 2x2, 3x2/2x3, 4x2/2x4, 5x2/2x5 ...
     const cw=(W-gap*(cols-1))/cols, ch=(H-gap*(rows-1))/rows; if(cw<=0||ch<=0) continue;
-    const fs=Math.min(ch*0.78, cw*0.8);
-    if(!best||fs>best.fs) best={cols,rows,fs}; }
+    const iw=cw-2*bw, ih=ch-2*bw, m=Math.max(Math.min(iw,ih)*0.08,rad*0.3+2); // clear of the border and the rounded corners
+    const score=Math.min(ch*0.78,cw*0.8); // the same grid choice as before (2x5 on a portrait iPad, 5x2 in landscape ...)
+    if(!best||score>best.score){ const f=inkFit(Object.assign({},ink,{asc:ink.tall,desc:0}),iw,ih,m); /* sized for the tallest single letter */ best={cols,rows,fs:f.fs,dy:f.dy,score}; } }
   if(!best) return;
   choicesEl.style.gridTemplateColumns="repeat("+best.cols+",1fr)"; choicesEl.style.gridTemplateRows="repeat("+best.rows+",1fr)";
-  choicesEl.style.gap=gap+"px"; choicesEl.style.setProperty("--fs",Math.floor(best.fs)+"px");
+  choicesEl.style.gap=gap+"px"; choicesEl.style.setProperty("--fs",best.fs+"px");
+  const padOf=dy=>[Math.max(0,2*dy).toFixed(1)+"px",Math.max(0,-2*dy).toFixed(1)+"px"];
+  // centre every glyph on its own ink box (top of its ascender, cap or x-height down to its descender), so a p/q/y/j/g
+  // is lifted as far as it hangs below the line and every letter gets the same space above and below
+  choicesEl.style.setProperty("--pt","0px"); choicesEl.style.setProperty("--pb","0px");
+  for(const b of choicesEl.children){ const g=ink.per[b.textContent]||[ink.asc,ink.desc,0];
+    const [pt,pb]=padOf(-((ink.A-ink.D)/2+(g[1]-g[0])/2)*best.fs), [pl,pr]=padOf(-g[2]*best.fs); // and left/right on its ink, not its advance
+    b.style.paddingTop=pt; b.style.paddingBottom=pb; b.style.paddingLeft=pl; b.style.paddingRight=pr; }
+}
+// practice card: the same ink fit for all 52 letters inside the letter area (room left for the tap "pop")
+function fitPractice(){
+  const box=document.getElementById("letterBox"), w=box.clientWidth, h=box.clientHeight; if(!w||!h) return;
+  const ink=inkOf(LOWERS+UPPERS,getComputedStyle(el).fontFamily);
+  const m=Math.min(w,h)*0.04, POP=1.15, f=inkFit(Object.assign({},ink,{asc:ink.tall,desc:0}),w/POP,h/POP,m/POP,Math.min(window.innerHeight*0.45,window.innerWidth*0.6));
+  // same size for every letter; each one centred on its own ink box
+  const g=ink.per[el.textContent]||[ink.asc,ink.desc,0], dy=-((ink.A-ink.D)/2+(g[1]-g[0])/2)*f.fs, dx=-g[2]*f.fs;
+  el.style.fontSize=f.fs+"px"; el.style.paddingTop=Math.max(0,2*dy).toFixed(1)+"px"; el.style.paddingBottom=Math.max(0,-2*dy).toFixed(1)+"px";
+  el.style.paddingLeft=Math.max(0,2*dx).toFixed(1)+"px"; el.style.paddingRight=Math.max(0,-2*dx).toFixed(1)+"px";
 }
 function advance(){
   clearTimeout(tNextT); tNextT=null;
@@ -645,8 +712,8 @@ const ALL52=LETTERS.concat(LETTERS.map(l=>l.toUpperCase()));
 function shapeBox(sh){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; for(const s of sh) for(const [x,y] of s){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } return [x0,y0,x1,y1]; }
 // size the canvases to the stage, place the writing lines, fit the letter onto them
 function layoutDraw(){
-  const r=dStage.getBoundingClientRect(); const dpr=Math.min(window.devicePixelRatio||1,3);
-  dW=Math.max(1,Math.round(r.width)); dH=Math.max(1,Math.round(r.height));
+  const dpr=Math.min(window.devicePixelRatio||1,3);
+  dW=Math.max(1,dStage.clientWidth); dH=Math.max(1,dStage.clientHeight); // inside the border: the canvases' real size, so nothing is stretched or cut
   for(const c of [guideC,inkC,demoC]){ c.width=Math.round(dW*dpr); c.height=Math.round(dH*dpr); }
   gctx.setTransform(dpr,0,0,dpr,0,0); ictx.setTransform(dpr,0,0,dpr,0,0); mctx.setTransform(dpr,0,0,dpr,0,0);
   dLine=Math.max(14,Math.min(44,Math.min(dW,dH)*0.055));
@@ -923,7 +990,9 @@ onTap(document.getElementById("dCase"),()=>{ dCase=dCase==="upper"?"lower":"uppe
   if(mode==="draw"&&!dPassed){ stopDemo(); layoutDraw(); drawGuide(); clearInk(); drawPrompt(); } });
 onTap(document.getElementById("dOutline"),()=>{ dOutline=!dOutline; lsSet(DOUT_KEY,dOutline); syncDrawToggles(); drawGuide(); });
 let resizeT=null;
-window.addEventListener("resize",()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>{ if(mode==="test") layoutChoices(); if(mode==="draw"&&!dPassed){ const r=dStage.getBoundingClientRect(); if(Math.round(r.width)!==dW||Math.round(r.height)!==dH){ stopDemo(); layoutDraw(); drawGuide(); clearInk(); } } },150); }); // only if the stage really changed size
+function stageCheck(){ if(mode==="draw"&&!dPassed&&dStage.clientWidth&&(dStage.clientWidth!==dW||dStage.clientHeight!==dH)){ stopDemo(); layoutDraw(); drawGuide(); clearInk(); } } // only if the stage really changed size
+window.addEventListener("resize",()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>{ if(mode==="test") layoutChoices(); if(mode==="practice") fitPractice(); stageCheck(); },150); });
+if(window.ResizeObserver){ const ro=new ResizeObserver(()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>{ if(mode==="test") layoutChoices(); if(mode==="practice") fitPractice(); stageCheck(); },150); }); for(const id of ["dStage","letterBox","choices"]) ro.observe(document.getElementById(id)); }
 
 // ---------- safety nets ----------
 // If a timer got lost (e.g. iOS suspended the app mid-celebration or mid-answer), recover instead of staying stuck.
@@ -938,10 +1007,14 @@ document.addEventListener("visibilitychange",()=>{ if(document.hidden) safe(quie
 window.addEventListener("pageshow",onResume);
 
 show("home");
+// v17: the service worker is registered after the page has loaded, and it fills the offline sound cache in the
+// background a few seconds later, so neither ever slows down opening the app or the first sounds.
 if("serviceWorker" in navigator) safe(()=>{
-  navigator.serviceWorker.register("sw.js").catch(()=>{});
-  // make sure every voice in VOICES is available offline (sw.js pre-caches Dad; this also covers voices added later)
-  navigator.serviceWorker.ready.then(reg=>{ const files=[].concat(...VOICES.map(voiceFiles)); if(reg.active&&files.length) reg.active.postMessage({type:"cache-voices",files}); }).catch(()=>{});
+  const go=()=>safe(()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+    navigator.serviceWorker.ready.then(reg=>{ setTimeout(()=>safe(()=>{ if(reg.update) reg.update().catch(()=>{}); /* look for a new version on every launch */ const files=[].concat(...VOICES.map(voiceFiles)); const w=reg.active||navigator.serviceWorker.controller; if(w) w.postMessage({type:"cache-voices",files}); }),3000); }).catch(()=>{});
+  });
+  if(document.readyState==="complete") go(); else window.addEventListener("load",go);
 });
 </script>
 </body>
