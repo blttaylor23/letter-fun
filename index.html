@@ -33,47 +33,98 @@
   #home{align-items:center;justify-content:center;gap:4vmin;padding:4vmin}
   #home h1{margin:0;font-size:min(13vw,12vh);color:#e76f51;text-align:center;line-height:1.1}
   #home h1 span:nth-child(2){color:#2a9d8f}
-  .homeRow{display:flex;gap:4vmin;width:100%;max-width:1200px;justify-content:center}
+  .homeRow{display:grid;grid-template-columns:repeat(4,1fr);gap:3vmin;width:100%;max-width:1400px}
   button.big{flex:none;width:min(80vw,440px);height:min(24vh,220px);font-size:min(11vw,9vh,84px);border-radius:40px;box-shadow:0 1vmin 0 rgba(0,0,0,.18);touch-action:manipulation}
-  .homeRow button.big{width:min(29vw,360px);height:min(46vh,300px);font-size:min(5.2vw,8vh,52px);line-height:1.1;padding:0 1vmin;font-family:inherit;font-weight:bold}
-  @media (orientation:portrait){.homeRow{flex-direction:column;align-items:center}.homeRow button.big{width:min(84vw,460px);height:min(20vh,200px);font-size:min(9vw,5vh,56px)}}
-  #goPractice{background:#2ecc71}#goUpper{background:#3a86ff}#goLower{background:#8e44ad}
+  .homeRow button.big{width:100%;height:min(46vh,300px);font-size:min(3.6vw,7vh,46px);line-height:1.1;padding:0 1vmin;font-family:inherit;font-weight:bold}
+  @media (orientation:portrait){.homeRow{grid-template-columns:1fr 1fr;max-width:720px}.homeRow button.big{height:min(25vh,280px);font-size:min(6.2vw,4.4vh,48px)}}
+  #goPractice{background:#2ecc71}#goUpper{background:#3a86ff}#goLower{background:#8e44ad}#goDraw{background:#e76f51}
+  button#gear{position:absolute;top:12px;right:12px;flex:none;width:58px;height:58px;padding:0;border-radius:50%;font-size:30px;line-height:58px;color:#fff;background:conic-gradient(#e76f51 var(--p,0%),#c9bfae var(--p,0%));opacity:.75;touch-action:none}
+  /* settings (problem letters) */
+  #settings{align-items:center;gap:2vmin;padding:3vmin}
+  #settings h2{margin:0;font-size:min(8vw,6vh,52px);color:#e76f51}
+  #settings .hint{margin:0;font-size:min(4.5vw,3vh,26px);color:#777;text-align:center}
+  #pGrid{flex:1;min-height:0;width:100%;max-width:1200px;display:grid;grid-template-columns:repeat(5,1fr);gap:1.6vmin}
+  @media (orientation:landscape){#pGrid{grid-template-columns:repeat(9,1fr)}}
+  button.pl{flex:none;width:100%;height:100%;min-height:0;padding:0;border-radius:2.5vmin;background:#fff;border:.6vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(7vw,5vh,56px);touch-action:manipulation}
+  @media (orientation:landscape){button.pl{font-size:min(4.5vw,7vh,56px)}}
+  button.pl.on{background:#e76f51;border-color:#b5523a;color:#fff}
+  #pBtns{display:flex;gap:4vmin;flex:none}
+  #pBtns button.big{width:min(40vw,320px);height:min(11vh,110px);font-size:min(6vw,5vh,44px);font-family:inherit;font-weight:bold}
+  #pClear{background:#999}#pDone{background:#2ecc71}
+  #cRow{display:flex;align-items:center;gap:1.6vmin;flex:none;flex-wrap:wrap;justify-content:center}
+  #cRow span{font-size:min(4.8vw,3.4vh,28px);color:#555;font-weight:bold}
+  @media (max-width:500px){#cRow span{flex-basis:100%;text-align:center}}
+  button.cn{flex:none;width:min(15vw,9vh,76px);height:min(11vw,7vh,56px);padding:0;border-radius:2vmin;background:#fff;border:.5vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(6vw,4vh,32px);touch-action:manipulation}
+  button.cn.on{background:#3a86ff;border-color:#2a64c0;color:#fff}
+  /* draw mode */
+  #draw{padding:10px 12px 12px}
+  #dTop{display:flex;align-items:center;justify-content:center;gap:12px;min-height:64px;padding:0 8px 0 80px;box-sizing:border-box;flex:none;flex-wrap:wrap}
+  button.pill{flex:none;height:52px;padding:0 18px;border-radius:26px;font-size:min(5.5vw,26px);font-family:inherit;font-weight:bold;background:#3a86ff;touch-action:manipulation}
+  #dOutline{background:#2a9d8f}#dOutline.off{background:#999}
+  #dStage{flex:1;min-height:0;position:relative;margin:8px 0 10px;background:#fff;border-radius:4vmin;border:.8vmin solid #e0d6c2;overflow:hidden;touch-action:none}
+  #dStage canvas{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none}
+  #dYay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:min(40vw,40vh);pointer-events:none;opacity:0;transform:scale(.4);transition:opacity .2s,transform .35s;background:rgba(46,204,113,.18)}
+  #dYay.on{opacity:1;transform:scale(1)}
+  #dBtns{display:flex;gap:2.5vmin;flex:none}
+  #dBtns button{height:min(12vh,110px);font-size:min(7vw,6vh,50px);border-radius:30px;touch-action:manipulation;font-family:inherit;font-weight:bold}
+  #dClear{background:#f4a261}#dSay{background:#8e44ad;flex:.7}#dDone{background:#2ecc71}#dSkip{background:#3a86ff;flex:.7}
+  @media (max-width:600px){#dBtns .w{display:none}}
   button.big .ico{display:block;font-size:.8em;line-height:1}
   .homeRow button.big .ico{font-size:1.5em;margin-bottom:.1em}
   button.homeBtn{position:absolute;top:10px;left:10px;flex:none;width:64px;height:64px;border-radius:20px;font-size:36px;background:#f4a261;color:#fff;z-index:5;touch-action:manipulation;padding:0;line-height:64px}
   /* test mode */
   #test{padding:10px 12px 14px}
-  #tTop{display:flex;align-items:center;justify-content:center;min-height:64px;padding:0 76px;box-sizing:border-box;font-size:min(6vw,4.5vh,40px);color:#777;text-align:center;flex:none}
+  #tTop{display:flex;align-items:center;justify-content:space-between;min-height:64px;padding:0 6px 0 84px;box-sizing:border-box;flex:none;gap:12px}
+  .count{font-size:min(13vw,9vh,88px);font-weight:bold;line-height:1;font-variant-numeric:tabular-nums;min-width:1.2em}
+  #tGood{color:#27ae60;text-align:left}#tBad{color:#e74c3c;text-align:right}
+  /* wide screens: the replay button sits between the counters, leaving more room for the letters */
+  @media (min-aspect-ratio:13/10){#tPrompt{position:absolute;top:8px;left:50%;transform:translateX(-50%);padding:0;z-index:4}
+    #test #tPrompt button#speaker{height:56px;width:min(24vw,190px);font-size:34px}.count{font-size:min(9vw,13vh,80px)}}
   #tPrompt{display:flex;align-items:center;justify-content:center;flex:none;padding:1vh 0}
   button#speaker{flex:none;width:min(40vw,26vh,240px);height:min(20vw,13vh,120px);border-radius:999px;background:#8e44ad;font-size:min(12vw,8vh,72px);box-shadow:0 .8vmin 0 rgba(0,0,0,.18);touch-action:manipulation}
-  #choices{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2.5vmin;padding:1vmin}
-  @media (min-aspect-ratio:13/10){#choices{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr}}
+  #choices{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2vmin;padding:1vmin;box-sizing:border-box}
   button.choice{flex:none;width:100%;height:100%;min-height:0;min-width:0;background:#fff;border:.8vmin solid #e0d6c2;border-radius:4vmin;font-weight:bold;line-height:1;touch-action:manipulation;overflow:hidden;font-family:inherit;padding:0}
-  #choices button.choice{font-size:min(28vw,26vh)}
-  @media (min-aspect-ratio:13/10){#choices button.choice{font-size:min(17vw,40vh)}}
+  #choices button.choice{font-size:var(--fs,min(28vw,26vh))}
   button.choice.right{background:#2ecc71;border-color:#1e8449;color:#fff !important}
   button.choice.wrong{background:#e74c3c;border-color:#a93226;color:#fff !important;animation:shake .4s}
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4vmin)}40%{transform:translateX(4vmin)}60%{transform:translateX(-3vmin)}80%{transform:translateX(3vmin)}}
   #tFlash{position:fixed;inset:0;background:#2ecc71;opacity:0;pointer-events:none;transition:opacity .15s}
   #tFlash.on{opacity:.45}
-  /* score */
-  #score{align-items:center;justify-content:center;gap:3vmin;padding:4vmin;text-align:center}
-  #scoreText{font-size:min(9vw,9vh);color:#2a9d8f;font-weight:bold;line-height:1.15}
-  #stars{display:grid;grid-template-columns:repeat(13,auto);justify-content:center;gap:.15em .2em;font-size:min(5.6vw,7vh,52px);line-height:1.1;max-width:95vw}
-  @media (orientation:portrait){#stars{grid-template-columns:repeat(9,auto);font-size:min(7vw,5vh,56px)}}
-  #stars .off{opacity:.2;filter:grayscale(1)}
-  #scoreBtns{display:flex;gap:4vmin;flex-wrap:wrap;justify-content:center}
-  #scoreBtns button.big{width:min(42vw,360px);height:min(16vh,150px);font-size:min(7vw,6vh,56px)}
-  #again{background:#3a86ff}#scoreHome{background:#f4a261}
 </style>
 </head>
 <body>
 <div id="home" class="screen on">
+  <button id="gear" aria-label="Settings (press and hold)">⚙️</button>
   <h1><span>Letter</span> <span>Fun</span></h1>
   <div class="homeRow">
     <button id="goPractice" class="big"><span class="ico">🔤</span>Practice</button>
     <button id="goUpper" class="big"><span class="ico">ABC</span>Uppercase Test</button>
     <button id="goLower" class="big"><span class="ico">abc</span>Lowercase Test</button>
+    <button id="goDraw" class="big"><span class="ico">✏️</span>Draw</button>
+  </div>
+</div>
+<div id="settings" class="screen">
+  <h2>Problem letters</h2>
+  <p class="hint">Tap the letters that need extra practice</p>
+  <div id="pGrid"></div>
+  <div id="cRow"><span>Choices in tests:</span><button class="cn" data-n="4">4</button><button class="cn" data-n="6">6</button><button class="cn" data-n="8">8</button><button class="cn" data-n="10">10</button></div>
+  <div id="pBtns">
+    <button id="pClear" class="big">Clear all</button>
+    <button id="pDone" class="big">Done</button>
+  </div>
+</div>
+<div id="draw" class="screen">
+  <button class="homeBtn" aria-label="Home">🏠</button>
+  <div id="dTop">
+    <button id="dCase" class="pill">ABC</button>
+    <button id="dOutline" class="pill">Outline ON</button>
+  </div>
+  <div id="dStage"><canvas id="dGuide"></canvas><canvas id="dInk"></canvas><div id="dYay">🌟</div></div>
+  <div id="dBtns">
+    <button id="dClear">Clear</button>
+    <button id="dSay" aria-label="Hear it again">🔊</button>
+    <button id="dDone"><span class="w">Done </span>✔</button>
+    <button id="dSkip" aria-label="Skip">➡</button>
   </div>
 </div>
 <div id="wrap" class="screen">
@@ -87,40 +138,126 @@
 </div>
 <div id="test" class="screen">
   <button class="homeBtn" aria-label="Home">🏠</button>
-  <div id="tTop">1 / 26</div>
+  <div id="tTop"><span id="tGood" class="count" aria-label="Right">0</span><span id="tBad" class="count" aria-label="Wrong">0</span></div>
   <div id="tPrompt"><button id="speaker" aria-label="Hear it again">🔊</button></div>
   <div id="choices"></div>
   <div id="tFlash"></div>
-</div>
-<div id="score" class="screen">
-  <div id="scoreText"></div>
-  <div id="stars"></div>
-  <div id="scoreBtns">
-    <button id="again" class="big">Play again</button>
-    <button id="scoreHome" class="big">🏠 Home</button>
-  </div>
 </div>
 <div id="done">🎉 All green! 🎉</div>
 <script>
 // letter name (speech), then its phonics sound (recorded clip in sounds/)
 const LETTERS="abcdefghijklmnopqrstuvwxyz".split("");
+function safe(fn,...a){ try{ return fn(...a); }catch(e){ try{console.error(e);}catch(_){} } }
+function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v); }catch(e){ return d; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+// "problem letters" (lowercase keys), chosen by a grown-up in the hidden settings screen
+const PROB_KEY="lf-problem";
+let problems=new Set((Array.isArray(lsGet(PROB_KEY,[]))?lsGet(PROB_KEY,[]):[]).filter(l=>LETTERS.includes(l)));
+function saveProblems(){ lsSet(PROB_KEY,[...problems].sort()); }
+// number of answer choices in the tests (4 / 6 / 8 / 10)
+const CHOICES_KEY="lf-choices", CHOICE_OPTS=[4,6,8,10];
+let nChoices=CHOICE_OPTS.includes(lsGet(CHOICES_KEY,4))?lsGet(CHOICES_KEY,4):4;
+
+// ---------- speech (iOS Safari-hardened; the game never waits on it) ----------
+const synth=("speechSynthesis" in window && window.speechSynthesis) ? window.speechSynthesis : null;
+let voice=null, speakT=null, speechWatchT=null, lastUtter=null, cancelAt=0, spokeOnce=false;
+function pickVoice(){
+  if(!synth) return;
+  const vs=(synth.getVoices()||[]).filter(v=>/^en/i.test(v.lang));
+  const prefs=["Samantha","Ava","Allison","Susan","Zoe","Nicky","Aria","Jenny","Michelle","Google US English","Karen","Moira","Tessa","Serena","Victoria","Zira","female"];
+  for(const n of prefs){const v=vs.find(v=>v.name.toLowerCase().includes(n.toLowerCase()));if(v){voice=v;return;}}
+  voice=vs[0]||null;
+}
+safe(pickVoice); if(synth) safe(()=>{ synth.onvoiceschanged=()=>safe(pickVoice); });
+// Stop speech. Returns true if something was actually speaking/queued.
+function hush(){
+  clearTimeout(speakT); speakT=null; clearTimeout(speechWatchT); speechWatchT=null;
+  if(!synth) return false;
+  let busy=false;
+  try{ busy=!!(synth.speaking||synth.pending); if(busy){ synth.cancel(); cancelAt=Date.now(); } if(synth.paused) synth.resume(); }catch(e){}
+  return busy;
+}
+function speak(text){
+  if(!synth||typeof SpeechSynthesisUtterance==="undefined") return;
+  const justCancelled=hush()||Date.now()-cancelAt<150;
+  const go=()=>{ speakT=null; try{
+    const u=new SpeechSynthesisUtterance(text);
+    if(voice) u.voice=voice;
+    u.rate=0.75; u.pitch=1.3; u.volume=0.9; u.lang="en-US";
+    spokeOnce=true; lastUtter=u; // keep a reference: Safari drops end events for garbage-collected utterances
+    u.onend=u.onerror=()=>{ if(lastUtter===u){ lastUtter=null; clearTimeout(speechWatchT); speechWatchT=null; } };
+    if(synth.paused) synth.resume(); // iOS can come back from the background "paused"
+    synth.speak(u);
+    // watchdog: our phrases are short; if the engine is still "speaking" long after, it is wedged -> reset it
+    speechWatchT=setTimeout(()=>{ speechWatchT=null; try{ if(lastUtter===u&&(synth.speaking||synth.pending)){ synth.cancel(); } }catch(e){} lastUtter=null; },9000);
+  }catch(e){} };
+  // Safari often swallows an utterance spoken immediately after cancel(); give it a moment.
+  // (Only delay once speech has been unlocked by an earlier direct call; iOS needs the first speak() inside a tap.)
+  if(justCancelled&&spokeOnce) speakT=setTimeout(go,120); else go();
+}
+
+// ---------- phonics clips (created on first use, not 26 up front) ----------
 const CLIPS={}; let clip=null;
-LETTERS.forEach(l=>{const a=new Audio("sounds/"+l+".mp3"); a.preload="auto"; CLIPS[l]=a;});
+function getClip(l){ if(!CLIPS[l]){ const a=new Audio("sounds/"+l+".mp3"); a.preload="auto"; CLIPS[l]=a; } return CLIPS[l]; }
 function stopClip(){ if(clip){ try{clip.pause(); clip.currentTime=0;}catch(e){} clip=null; } }
 function playSound(l){
-  speechSynthesis.cancel(); stopClip();
-  clip=CLIPS[l]||new Audio("sounds/"+l+".mp3");
-  try{clip.currentTime=0;}catch(e){}
-  const p=clip.play(); if(p&&p.catch) p.catch(()=>{});
+  hush(); stopClip();
+  try{
+    clip=getClip(l);
+    try{clip.currentTime=0;}catch(e){}
+    const p=clip.play(); if(p&&p.catch) p.catch(()=>{});
+  }catch(e){ clip=null; }
 }
+function quiet(){ hush(); stopClip(); }
+
+// ---------- reliable taps ----------
+// Act on touchend (a user gesture on iOS, so audio/speech still unlock). iOS suppresses "click" when a second
+// finger/thumb is on the screen and when the finger drifts a bit; kids do both. preventDefault on touchend also
+// stops the delayed native click from landing on the *next* screen (ghost taps). click stays as mouse/keyboard fallback.
+let lastTapT=0;
+function onTap(el,fn){
+  const ids=new Set();
+  el.addEventListener("touchstart",e=>{ for(const t of e.changedTouches) ids.add(t.identifier); },{passive:true});
+  el.addEventListener("touchcancel",e=>{ for(const t of e.changedTouches) ids.delete(t.identifier); },{passive:true});
+  el.addEventListener("touchend",e=>{
+    for(const t of e.changedTouches){
+      if(!ids.has(t.identifier)) continue; ids.delete(t.identifier);
+      const r=el.getBoundingClientRect(), m=40;
+      if(r.width&&t.clientX>=r.left-m&&t.clientX<=r.right+m&&t.clientY>=r.top-m&&t.clientY<=r.bottom+m){
+        if(e.cancelable) e.preventDefault();
+        lastTapT=Date.now(); safe(fn,e); return;
+      }
+    }
+  },{passive:false});
+  el.addEventListener("click",e=>{ if(Date.now()-lastTapT<700) return; safe(fn,e); });
+}
+
 const colors=["#e63946","#2a9d8f","#f4a261","#457b9d","#8e44ad","#e76f51","#27ae60","#d81b60"];
-const el=document.getElementById("letter"), top_=document.getElementById("top");
+const el=document.getElementById("letter"), top_=document.getElementById("top"), doneEl=document.getElementById("done");
 let taps=0;
 let queue=[], reds=[], current=null, total=0, greens=0;
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+// break up identical neighbours (bounded number of passes, never loops forever)
+function spread(a){
+  for(let pass=0;pass<6;pass++){
+    let ok=true;
+    for(let i=1;i<a.length;i++){
+      if(a[i]!==a[i-1]) continue; ok=false;
+      for(let k=0;k<a.length;k++){ const j=Math.floor(Math.random()*a.length); if(a[j]!==a[i]&&a[j-1]!==a[i]&&a[j+1]!==a[i]){ [a[i],a[j]]=[a[j],a[i]]; break; } }
+    }
+    if(ok) break;
+  }
+  return a;
+}
+// every letter in both cases once; problem letters (both cases) 3 times
+function buildDeck(){
+  const d=[];
+  LETTERS.forEach(l=>{ const n=problems.has(l)?3:1; for(let i=0;i<n;i++) d.push(l,l.toUpperCase()); });
+  return spread(shuffle(d));
+}
 function startRound(){
-  queue=shuffle("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""));
+  queue=buildDeck();
   reds=[]; total=queue.length; greens=0; next();
 }
 function next(){
@@ -128,49 +265,44 @@ function next(){
     if(reds.length===0){ celebrate(); return; }
     queue=shuffle(reds); reds=[];
   }
-  current=queue.shift(); taps=0; stopClip();
+  current=queue.shift(); taps=0;
   el.textContent=current;
   el.style.color=colors[Math.floor(Math.random()*colors.length)];
   top_.textContent="Green: "+greens+" of "+total;
-  speechSynthesis.cancel();
-}
-let voice=null;
-function pickVoice(){
-  const vs=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));
-  const prefs=["Samantha","Ava","Allison","Susan","Zoe","Nicky","Aria","Jenny","Michelle","Google US English","Karen","Moira","Tessa","Serena","Victoria","Zira","female"];
-  for(const n of prefs){const v=vs.find(v=>v.name.toLowerCase().includes(n.toLowerCase()));if(v){voice=v;return;}}
-  voice=vs[0]||null;
-}
-pickVoice(); speechSynthesis.onvoiceschanged=pickVoice;
-function speak(text){
-  const u=new SpeechSynthesisUtterance(text);
-  if(voice) u.voice=voice;
-  u.rate=0.75; u.pitch=1.3; u.volume=0.9; u.lang="en-US";
-  speechSynthesis.speak(u);
+  quiet();
 }
 function say(){
-  speechSynthesis.cancel(); stopClip();
+  if(mode!=="practice"||!current||celebrating()) return;
   const l=current.toLowerCase();
   taps++;
   if(taps%2===1) speak(l.toUpperCase()+".");
   else playSound(l);
   el.classList.add("pop"); setTimeout(()=>el.classList.remove("pop"),150);
 }
-let celebrateT=null;
-function celebrate(){
-  const d=document.getElementById("done");
-  d.style.display="flex";
-  speechSynthesis.cancel(); speak("Great job! You got them all!");
-  celebrateT=setTimeout(()=>{celebrateT=null; d.style.display="none"; if(mode==="practice") startRound();},4000);
+let celebrateT=null, celebrateAt=0;
+function celebrating(){ return doneEl.style.display==="flex"; }
+function endCelebration(restart){
+  clearTimeout(celebrateT); celebrateT=null; celebrateAt=0;
+  doneEl.style.display="none";
+  if(restart&&mode==="practice") startRound();
 }
-document.getElementById("letterBox").onclick=say;
+function celebrate(){
+  doneEl.style.display="flex"; celebrateAt=Date.now();
+  // schedule the exit BEFORE speaking, so a speech failure can never leave the overlay up
+  clearTimeout(celebrateT); celebrateT=setTimeout(()=>endCelebration(true),4000);
+  quiet(); speak("Great job! You got them all!");
+}
+// tapping the celebration screen (after a moment) skips it, so it can never trap the kids
+onTap(doneEl,()=>{ if(Date.now()-celebrateAt>1200) endCelebration(true); });
+onTap(document.getElementById("letterBox"),say);
 const HOLD_MS=1000;
-function holdButton(id,action){
+function holdButton(id,action,guard){
+  guard=guard||(()=>mode==="practice"&&!celebrating());
   const b=document.getElementById(id); let t=null,start=0,raf=null;
   const reset=()=>{clearTimeout(t);cancelAnimationFrame(raf);t=null;b.style.setProperty("--p","0%");};
   const tick=()=>{if(!t)return;const p=Math.min(100,(Date.now()-start)/HOLD_MS*100);b.style.setProperty("--p",p+"%");raf=requestAnimationFrame(tick);};
-  const down=e=>{e.preventDefault();e.stopPropagation();if(t)return;start=Date.now();t=setTimeout(()=>{reset();action();},HOLD_MS);tick();};
-  const up=e=>{e.preventDefault();e.stopPropagation();reset();};
+  const down=e=>{if(e.cancelable)e.preventDefault();e.stopPropagation();if(t)return;start=Date.now();t=setTimeout(()=>{reset();if(guard())safe(action);},HOLD_MS);tick();};
+  const up=e=>{if(e.cancelable)e.preventDefault();e.stopPropagation();reset();};
   if("ontouchstart" in window){
     b.addEventListener("touchstart",down,{passive:false});
     b.addEventListener("touchend",up,{passive:false});
@@ -181,86 +313,322 @@ function holdButton(id,action){
     b.addEventListener("mouseleave",up);
   }
   b.addEventListener("contextmenu",e=>e.preventDefault());
+  return reset;
 }
-holdButton("green",()=>{greens++; next();});
-holdButton("red",()=>{reds.push(current); next();});
+const resetGreen=holdButton("green",()=>{greens++; next();});
+const resetRed=holdButton("red",()=>{reds.push(current); next();});
+// block double-tap zoom on empty areas (taps on controls are already handled by onTap)
 let lastTouch=0;
-document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<350){e.preventDefault();e.target.click&&e.target.closest&&(e.target.closest("#letterBox,button.choice,#speaker,button.big,button.homeBtn")||{click(){}}).click();}lastTouch=n;},{passive:false});
+document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<350&&e.cancelable)e.preventDefault();lastTouch=n;},{passive:false});
 document.addEventListener("dblclick",e=>e.preventDefault());
 document.addEventListener("gesturestart",e=>e.preventDefault());
 // ---------- screens / modes ----------
 let mode="home";
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));}
-function quiet(){speechSynthesis.cancel(); stopClip();}
-function goHome(){
-  quiet(); mode="home"; clearTimeout(tNextT); tNextT=null;
-  if(celebrateT){clearTimeout(celebrateT); celebrateT=null;}
-  document.getElementById("done").style.display="none";
-  show("home");
+function stopAll(){
+  quiet(); clearTimeout(tNextT); tNextT=null; tBusy=false; tBusyAt=0;
+  endCelebration(false); resetGreen(); resetRed(); resetGear();
+  drawStop();
 }
-function startPractice(){ quiet(); mode="practice"; show("wrap"); startRound(); }
-document.getElementById("goPractice").onclick=startPractice;
-document.getElementById("goUpper").onclick=()=>startTest("upper");
-document.getElementById("goLower").onclick=()=>startTest("lower");
-document.querySelectorAll(".homeBtn").forEach(b=>b.onclick=e=>{e.stopPropagation(); goHome();});
-document.getElementById("scoreHome").onclick=goHome;
-document.getElementById("again").onclick=()=>startTest(tCase);
+function goHome(){ stopAll(); mode="home"; show("home"); }
+function startPractice(){ stopAll(); mode="practice"; show("wrap"); startRound(); }
+onTap(document.getElementById("goPractice"),startPractice);
+onTap(document.getElementById("goUpper"),()=>startTest("upper"));
+onTap(document.getElementById("goLower"),()=>startTest("lower"));
+document.querySelectorAll(".homeBtn").forEach(b=>onTap(b,e=>{e&&e.stopPropagation&&e.stopPropagation(); goHome();}));
+onTap(document.getElementById("goDraw"),()=>startDraw());
+// gear: press and hold ~1s (kid-proof) to open the grown-up settings
+const resetGear=holdButton("gear",()=>openSettings(),()=>mode==="home");
 
 // ---------- test mode ----------
-const TEST_N=LETTERS.length; // every letter exactly once
+// endless: shuffled deck of all 26 + problem letters once more; reshuffle when it runs out
 let tCase="upper";
-let tLetters=[], tIdx=0, tScore=0, tMissed=false, tAnswer=null, tBusy=false, tNextT=null;
-const choicesEl=document.getElementById("choices");
+let tDeck=[], tIdx=0, tGood=0, tBad=0, tAnswer=null, tLast=null, tBusy=false, tBusyAt=0, tNextT=null;
+const choicesEl=document.getElementById("choices"), tGoodEl=document.getElementById("tGood"), tBadEl=document.getElementById("tBad");
+function buildTestDeck(){
+  const d=spread(shuffle(LETTERS.concat([...problems])));
+  if(d.length>1&&d[0]===tLast){ // no repeat across reshuffles
+    for(let j=1;j<d.length;j++){ if(d[j]!==tLast&&d[j-1]!==d[0]&&d[j+1]!==d[0]){ [d[0],d[j]]=[d[j],d[0]]; break; } }
+  }
+  return d;
+}
+function showCounts(){ tGoodEl.textContent=tGood; tBadEl.textContent=tBad; }
 function startTest(c){
-  quiet(); mode="test"; clearTimeout(tNextT); tNextT=null;
+  stopAll(); mode="test";
   tCase=(c==="lower")?"lower":"upper";
-  tLetters=shuffle(LETTERS.slice()); tIdx=0; tScore=0;
+  tGood=0; tBad=0; tLast=null; showCounts();
+  tDeck=buildTestDeck(); tIdx=0;
   show("test"); askQuestion();
 }
-function promptTest(){ if(mode!=="test"||!tAnswer) return; quiet(); speak("Find the letter "+tAnswer.toUpperCase()+"."); }
+function promptTest(){ if(mode!=="test"||!tAnswer) return; speak("Find the letter "+tAnswer.toUpperCase()+"."); }
 function askQuestion(){
-  tBusy=false; tMissed=false;
-  const ans=tLetters[tIdx]; tAnswer=ans;
+  tBusy=false; tBusyAt=0;
+  if(tIdx>=tDeck.length){ tDeck=buildTestDeck(); tIdx=0; }
+  const ans=tDeck[tIdx]; tAnswer=ans; tLast=ans;
   const upper=tCase==="upper";
-  const wrong=shuffle(LETTERS.filter(x=>x!==ans)).slice(0,3);
+  // distractors: problem letters first (up to about half of them), the rest random; all distinct
+  const n=nChoices, pool=LETTERS.filter(x=>x!==ans);
+  const wrong=shuffle(pool.filter(x=>problems.has(x))).slice(0,Math.max(2,Math.ceil((n-1)/2)));
+  const rest=shuffle(pool.filter(x=>!wrong.includes(x)));
+  for(let i=0;wrong.length<n-1&&i<rest.length;i++) wrong.push(rest[i]);
+  wrong.length=Math.min(wrong.length,n-1);
   const opts=shuffle([ans,...wrong]);
-  document.getElementById("tTop").textContent=(tIdx+1)+" / "+TEST_N;
   choicesEl.innerHTML="";
   opts.forEach((l,i)=>{
     const b=document.createElement("button");
     b.className="choice"; b.textContent=upper?l.toUpperCase():l; b.dataset.l=l;
     b.style.color=colors[(i+tIdx*3)%colors.length];
-    b.onclick=()=>choose(b);
+    onTap(b,()=>choose(b));
     b.addEventListener("contextmenu",e=>e.preventDefault());
     choicesEl.appendChild(b);
   });
+  layoutChoices();
   promptTest();
 }
+// pick the columns x rows that make the letters biggest for this screen, then size the font to the cell
+function layoutChoices(){
+  const n=choicesEl.children.length; if(!n) return;
+  const r=choicesEl.getBoundingClientRect(); if(!r.width||!r.height) return;
+  const gap=Math.min(window.innerWidth,window.innerHeight)*0.02, pad=Math.min(window.innerWidth,window.innerHeight)*0.02;
+  const W=r.width-pad, H=r.height-pad;
+  let best=null;
+  for(let cols=1;cols<=n;cols++){ const rows=Math.ceil(n/cols); if(cols*rows!==n) continue; // full grid only: 2x2, 3x2/2x3, 4x2/2x4, 5x2/2x5 ...
+    const cw=(W-gap*(cols-1))/cols, ch=(H-gap*(rows-1))/rows; if(cw<=0||ch<=0) continue;
+    const fs=Math.min(ch*0.78, cw*0.8);
+    if(!best||fs>best.fs) best={cols,rows,fs}; }
+  if(!best) return;
+  choicesEl.style.gridTemplateColumns="repeat("+best.cols+",1fr)"; choicesEl.style.gridTemplateRows="repeat("+best.rows+",1fr)";
+  choicesEl.style.gap=gap+"px"; choicesEl.style.setProperty("--fs",Math.floor(best.fs)+"px");
+}
+function advance(){
+  clearTimeout(tNextT); tNextT=null;
+  if(mode!=="test") return;
+  tIdx++; askQuestion();
+}
 function choose(b){
-  if(mode!=="test"||tBusy||b.classList.contains("wrong")) return;
+  if(mode!=="test"||tBusy||!b.isConnected) return;
   if(b.dataset.l===tAnswer){
-    tBusy=true; if(!tMissed) tScore++;
+    tBusy=true; tBusyAt=Date.now(); tGood++; showCounts();
+    // schedule the next question BEFORE any feedback, so nothing can leave the test stuck "busy"
+    clearTimeout(tNextT); tNextT=setTimeout(advance,1300);
     b.classList.add("right");
     const f=document.getElementById("tFlash"); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),350);
-    quiet(); speak("Yes!");
-    tNextT=setTimeout(()=>{ tNextT=null; if(mode!=="test") return; tIdx++; if(tIdx>=TEST_N) showScore(tScore); else askQuestion(); },1300);
+    speak("Yes!");
   }else{
-    tMissed=true;
-    b.classList.add("wrong");
-    quiet(); speak("Try again.");
+    tBad++; showCounts(); // every wrong tap counts
+    b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); // replay the shake
+    speak("Try again.");
   }
 }
-function showScore(n){
-  mode="score"; show("score");
-  document.getElementById("scoreText").textContent="You got "+n+" out of "+TEST_N+"!";
-  let h=""; for(let i=0;i<TEST_N;i++) h+=i<n?'<span class="on">⭐</span>':'<span class="off">⭐</span>';
-  document.getElementById("stars").innerHTML=h;
-  quiet(); speak("You got "+n+" out of "+TEST_N+"!"+(n>=21?" Amazing!":n>=13?" Great job!":" Good try!"));
+onTap(document.getElementById("speaker"),e=>{e&&e.stopPropagation&&e.stopPropagation(); promptTest();});
+
+// ---------- settings: problem letters ----------
+const pGrid=document.getElementById("pGrid");
+function renderProblems(){
+  pGrid.innerHTML="";
+  LETTERS.forEach(l=>{
+    const b=document.createElement("button");
+    b.className="pl"+(problems.has(l)?" on":""); b.textContent=l.toUpperCase()+l; b.dataset.l=l;
+    b.setAttribute("aria-pressed",problems.has(l)?"true":"false");
+    onTap(b,()=>{ if(problems.has(l)) problems.delete(l); else problems.add(l); saveProblems();
+      b.classList.toggle("on",problems.has(l)); b.setAttribute("aria-pressed",problems.has(l)?"true":"false"); });
+    b.addEventListener("contextmenu",e=>e.preventDefault());
+    pGrid.appendChild(b);
+  });
 }
-document.getElementById("speaker").onclick=e=>{e.stopPropagation(); promptTest();};
+function openSettings(){ stopAll(); mode="settings"; renderProblems(); renderChoiceOpts(); show("settings"); }
+onTap(document.getElementById("pClear"),()=>{ problems.clear(); saveProblems(); renderProblems(); });
+function renderChoiceOpts(){ document.querySelectorAll("#cRow button.cn").forEach(b=>{ const on=+b.dataset.n===nChoices; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
+document.querySelectorAll("#cRow button.cn").forEach(b=>onTap(b,()=>{ nChoices=+b.dataset.n; lsSet(CHOICES_KEY,nChoices); renderChoiceOpts(); }));
+onTap(document.getElementById("pDone"),goHome);
+
+// ---------- draw mode ----------
+const DCASE_KEY="lf-draw-case", DOUT_KEY="lf-draw-outline";
+let dCase=lsGet(DCASE_KEY,"upper")==="lower"?"lower":"upper";
+let dOutline=lsGet(DOUT_KEY,true)!==false;
+const dStage=document.getElementById("dStage"), guideC=document.getElementById("dGuide"), inkC=document.getElementById("dInk"), dYay=document.getElementById("dYay");
+const gctx=guideC.getContext("2d"), ictx=inkC.getContext("2d");
+const INK=["#e63946","#3a86ff","#2a9d8f","#f4a261","#8e44ad","#e76f51","#27ae60","#d81b60"];
+const GLYPH_FONT='bold 100px "Chalkboard SE","Comic Sans MS","Comic Relief",Arial,sans-serif';
+let dLetter=null, dPrev=null, strokes=[], dActive=new Map(), dW=0, dH=0, dLine=20, dGlyph=null;
+let dPassed=false, dPassedAt=0, dNextT=null, dCheckT=null, inkN=0;
+function dChar(){ return dCase==="upper"?dLetter.toUpperCase():dLetter; }
+function syncDrawToggles(){
+  document.getElementById("dCase").textContent=dCase==="upper"?"ABC":"abc";
+  const o=document.getElementById("dOutline"); o.textContent=dOutline?"Outline ON":"Outline OFF"; o.classList.toggle("off",!dOutline);
+}
+// size the canvases to the stage and fit the letter into it
+function layoutDraw(){
+  const r=dStage.getBoundingClientRect(); const dpr=Math.min(window.devicePixelRatio||1,3);
+  dW=Math.max(1,Math.round(r.width)); dH=Math.max(1,Math.round(r.height));
+  for(const c of [guideC,inkC]){ c.width=Math.round(dW*dpr); c.height=Math.round(dH*dpr); }
+  gctx.setTransform(dpr,0,0,dpr,0,0); ictx.setTransform(dpr,0,0,dpr,0,0);
+  dLine=Math.max(14,Math.min(44,Math.min(dW,dH)*0.055));
+  if(!dLetter) return;
+  const ch=dChar(); gctx.font=GLYPH_FONT; const m=gctx.measureText(ch);
+  const L=m.actualBoundingBoxLeft||0, R=m.actualBoundingBoxRight||m.width, A=m.actualBoundingBoxAscent||70, D=m.actualBoundingBoxDescent||0;
+  const gw=Math.max(1,L+R), gh=Math.max(1,A+D);
+  const k=Math.min(dW*0.8/gw, dH*0.74/gh);
+  const size=100*k;
+  dGlyph={ch, font:GLYPH_FONT.replace("100px",size.toFixed(1)+"px"), x:dW/2-(R-L)*k/2, y:dH/2+(A-D)*k/2};
+}
+function drawGuide(){
+  gctx.clearRect(0,0,dW,dH);
+  if(!dOutline||!dGlyph) return;
+  gctx.font=dGlyph.font; gctx.textBaseline="alphabetic"; gctx.textAlign="left";
+  gctx.fillStyle="rgba(0,0,0,.12)"; gctx.fillText(dGlyph.ch,dGlyph.x,dGlyph.y);
+  gctx.lineWidth=3; gctx.strokeStyle="rgba(0,0,0,.18)"; gctx.lineJoin="round"; gctx.strokeText(dGlyph.ch,dGlyph.x,dGlyph.y);
+}
+function strokePath(ctx,s,lw){
+  ctx.lineWidth=lw; ctx.lineCap="round"; ctx.lineJoin="round";
+  if(s.p.length===1){ ctx.beginPath(); ctx.arc(s.p[0][0],s.p[0][1],lw/2,0,Math.PI*2); ctx.fill(); return; }
+  ctx.beginPath(); ctx.moveTo(s.p[0][0],s.p[0][1]); for(let i=1;i<s.p.length;i++) ctx.lineTo(s.p[i][0],s.p[i][1]); ctx.stroke();
+}
+function redrawInk(){ ictx.clearRect(0,0,dW,dH); for(const s of strokes){ ictx.strokeStyle=ictx.fillStyle=s.c; strokePath(ictx,s,dLine); } }
+function clearInk(){ strokes=[]; dActive.clear(); clearTimeout(dCheckT); dCheckT=null; redrawInk(); }
+function pickDrawLetter(){
+  const bag=[]; LETTERS.forEach(l=>{ if(l!==dPrev){ const n=problems.has(l)?3:1; for(let i=0;i<n;i++) bag.push(l); } });
+  return bag[Math.floor(Math.random()*bag.length)]||"a";
+}
+function drawPrompt(){ if(mode!=="draw"||!dLetter) return;
+  speak(dCase==="upper"?"Draw the letter "+dLetter.toUpperCase()+".":"Draw the lowercase letter "+dLetter.toUpperCase()+"."); }
+function nextDraw(){
+  if(mode!=="draw") return;
+  clearTimeout(dNextT); dNextT=null; dPassed=false; dPassedAt=0; dYay.classList.remove("on");
+  dPrev=dLetter; dLetter=pickDrawLetter();
+  layoutDraw(); drawGuide(); clearInk(); drawPrompt();
+}
+function startDraw(){ stopAll(); mode="draw"; show("draw"); syncDrawToggles(); dLetter=null; nextDraw(); }
+function drawStop(){ clearTimeout(dNextT); dNextT=null; clearTimeout(dCheckT); dCheckT=null; dActive.clear(); dPassed=false; dPassedAt=0; dYay.classList.remove("on"); }
+
+// --- checking: hidden glyph mask vs. ink, on a small grid ---
+function chamfer(mask,w,h){ // distance (px) from every cell to the nearest set cell
+  const INF=1e9, d=new Float32Array(w*h);
+  for(let i=0;i<w*h;i++) d[i]=mask[i]?0:INF;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const i=y*w+x; let v=d[i]; if(!v) continue;
+    if(x>0) v=Math.min(v,d[i-1]+1); if(y>0){ v=Math.min(v,d[i-w]+1); if(x>0) v=Math.min(v,d[i-w-1]+1.4142); if(x<w-1) v=Math.min(v,d[i-w+1]+1.4142); } d[i]=v; }
+  for(let y=h-1;y>=0;y--) for(let x=w-1;x>=0;x--){ const i=y*w+x; let v=d[i]; if(!v) continue;
+    if(x<w-1) v=Math.min(v,d[i+1]+1); if(y<h-1){ v=Math.min(v,d[i+w]+1); if(x<w-1) v=Math.min(v,d[i+w+1]+1.4142); if(x>0) v=Math.min(v,d[i+w-1]+1.4142); } d[i]=v; }
+  return d;
+}
+let evalC=null;
+function maskOf(draw,w,h,S){
+  if(!evalC) evalC=document.createElement("canvas");
+  evalC.width=w; evalC.height=h; const c=evalC.getContext("2d");
+  c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,w,h); c.setTransform(S,0,0,S,0,0); c.fillStyle=c.strokeStyle="#000"; draw(c);
+  const px=c.getImageData(0,0,w,h).data, m=new Uint8Array(w*h); for(let i=0;i<w*h;i++) m[i]=px[i*4+3]>100?1:0; return m;
+}
+function thin(m,w,h){ // Zhang-Suen thinning -> 1px centre line of the letter (bounded passes)
+  const at=(x,y)=>(x<0||y<0||x>=w||y>=h)?0:m[y*w+x];
+  for(let it=0;it<60;it++){ let changed=false;
+    for(let step=0;step<2;step++){ const del=[];
+      for(let y=0;y<h;y++) for(let x=0;x<w;x++){ if(!m[y*w+x]) continue;
+        const P0=at(x,y-1),P1=at(x+1,y-1),P2=at(x+1,y),P3=at(x+1,y+1),P4=at(x,y+1),P5=at(x-1,y+1),P6=at(x-1,y),P7=at(x-1,y-1);
+        const B=P0+P1+P2+P3+P4+P5+P6+P7; if(B<2||B>6) continue;
+        const A=(!P0&&P1)+(!P1&&P2)+(!P2&&P3)+(!P3&&P4)+(!P4&&P5)+(!P5&&P6)+(!P6&&P7)+(!P7&&P0); if(A!==1) continue;
+        if(step===0?(P0&&P2&&P4)||(P2&&P4&&P6):(P0&&P2&&P6)||(P0&&P4&&P6)) continue;
+        del.push(y*w+x); }
+      if(del.length){ changed=true; for(const i of del) m[i]=0; } }
+    if(!changed) break; }
+  return m;
+}
+const DRAW_RULES={ // lenient, tuned for 4-year-olds (see test notes)
+  // covTol/precTol are fractions of the letter height. cov = share of the letter's centre line the ink passes near;
+  // prec = share of the ink that is on/near the letter; len = ink length / letter centre-line length (stops scribbling).
+  on: {covTol:0.07, precTol:0.04, cov:0.65, prec:0.65, len:2.4, minLen:0},
+  off:{covTol:0.08, precTol:0.05, cov:0.60, prec:0.65, len:2.0, minLen:0.5, aspect:1.5}};
+function evalDrawing(outlineOn, strks){
+  strks=strks||strokes;
+  const rule=outlineOn?DRAW_RULES.on:DRAW_RULES.off;
+  const res={pass:false,coverage:0,precision:0,len:0};
+  if(!dGlyph||!strks.length) return res;
+  const S=160/Math.max(dW,dH), w=Math.ceil(dW*S), h=Math.ceil(dH*S);
+  const G=maskOf(c=>{ c.font=dGlyph.font; c.textBaseline="alphabetic"; c.textAlign="left"; c.fillText(dGlyph.ch,dGlyph.x,dGlyph.y); },w,h,S);
+  let gx0=w,gy0=h,gx1=-1,gy1=-1,gN=0;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(G[y*w+x]){ gN++; if(x<gx0)gx0=x; if(x>gx1)gx1=x; if(y<gy0)gy0=y; if(y>gy1)gy1=y; }
+  if(!gN) return res;
+  const K=thin(Uint8Array.from(G),w,h); let kN=0; for(let i=0;i<w*h;i++) kN+=K[i];
+  if(!kN) return res;
+  let pts=strks;
+  if(!outlineOn){ // from memory: move/scale the drawing's box onto the letter's centre-line box
+    let kx0=w,ky0=h,kx1=-1,ky1=-1; for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(K[y*w+x]){ if(x<kx0)kx0=x; if(x>kx1)kx1=x; if(y<ky0)ky0=y; if(y>ky1)ky1=y; }
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    for(const s of strks) for(const [x,y] of s.p){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+    const bx0=(kx0+.5)/S, bx1=(kx1+.5)/S, by0=(ky0+.5)/S, by1=(ky1+.5)/S;
+    let tw=bx1-bx0, th=by1-by0; const tbig=Math.max(tw,th,1); tw=Math.max(tw,tbig*0.12); th=Math.max(th,tbig*0.12);
+    let iw=x1-x0, ih=y1-y0; const big=Math.max(iw,ih,1); iw=Math.max(iw,big*0.12); ih=Math.max(ih,big*0.12);
+    // trust the drawing's longer side; keep the other scale within "aspect" of it (thin letters like l / i)
+    let sx=tw/iw, sy=th/ih; const ar=rule.aspect||2;
+    if(iw>=ih) sy=Math.min(Math.max(sy,sx/ar),sx*ar); else sx=Math.min(Math.max(sx,sy/ar),sy*ar);
+    const cx=(x0+x1)/2, cy=(y0+y1)/2, tx=(bx0+bx1)/2, ty=(by0+by1)/2;
+    pts=strks.map(s=>({c:s.c,p:s.p.map(([x,y])=>[tx+(x-cx)*sx, ty+(y-cy)*sy])}));
+  }
+  let len=0; for(const s of pts){ if(s.p.length<2){ len+=dLine; continue; } for(let i=1;i<s.p.length;i++) len+=Math.hypot(s.p[i][0]-s.p[i-1][0],s.p[i][1]-s.p[i-1][1]); }
+  const I=maskOf(c=>{ for(const s of pts) strokePath(c,s,dLine); },w,h,S);
+  let iN=0; for(let i=0;i<w*h;i++) iN+=I[i];
+  if(!iN) return res;
+  const dInk=chamfer(I,w,h), dGl=chamfer(G,w,h);
+  const Hg=gy1-gy0+1, tolCov=rule.covTol*Hg, tolPrec=rule.precTol*Hg;
+  let cov=0,prec=0; for(let i=0;i<w*h;i++){ if(K[i]&&dInk[i]<=tolCov) cov++; if(I[i]&&dGl[i]<=tolPrec) prec++; }
+  res.coverage=cov/kN; res.precision=prec/iN; res.len=len*S/kN; // ink length vs. letter centre-line length
+  res.pass=res.coverage>=rule.cov&&res.precision>=rule.prec&&res.len<=rule.len&&res.len>=(rule.minLen||0);
+  return res;
+}
+function drawSuccess(){
+  dPassed=true; dPassedAt=Date.now(); dActive.clear(); clearTimeout(dCheckT); dCheckT=null;
+  clearTimeout(dNextT); dNextT=setTimeout(nextDraw,1700); // schedule first: nothing can leave us stuck here
+  dYay.classList.add("on"); speak("Yes! Great job!");
+}
+function checkDrawing(fromDone){
+  if(mode!=="draw"||dPassed||!strokes.length){ if(fromDone&&mode==="draw"&&!dPassed) drawPrompt(); return; }
+  const r=evalDrawing(dOutline); window.__lastEval=r;
+  if(r.pass) return drawSuccess();
+  if(!fromDone) return; // on finger lift we only ever say "yes" - they may still be drawing
+  const rule=dOutline?DRAW_RULES.on:DRAW_RULES.off;
+  if(r.precision<rule.prec||r.len>rule.len){ speak("Oops! Let's try again."); clearInk(); } // mostly off the letter / scribbled
+  else speak("Keep going!"); // on the letter, just not finished
+}
+// --- finger / mouse drawing ---
+function stagePt(e){ const r=inkC.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
+function beginStroke(key,pt){ if(mode!=="draw"||dPassed) return; clearTimeout(dCheckT); dCheckT=null;
+  const s={c:INK[inkN++%INK.length],p:[pt]}; strokes.push(s); dActive.set(key,s); ictx.fillStyle=s.c; strokePath(ictx,s,dLine); }
+function moveStroke(key,pt){ const s=dActive.get(key); if(!s) return; const l=s.p[s.p.length-1];
+  if(Math.abs(pt[0]-l[0])+Math.abs(pt[1]-l[1])<2) return; s.p.push(pt);
+  ictx.strokeStyle=s.c; ictx.lineWidth=dLine; ictx.lineCap="round"; ictx.lineJoin="round";
+  ictx.beginPath(); ictx.moveTo(l[0],l[1]); ictx.lineTo(pt[0],pt[1]); ictx.stroke(); }
+function endStroke(key){ if(!dActive.delete(key)) return; if(!dActive.size){ clearTimeout(dCheckT); dCheckT=setTimeout(()=>{ dCheckT=null; safe(checkDrawing,false); },250); } }
+inkC.addEventListener("touchstart",e=>{ if(e.cancelable) e.preventDefault(); for(const t of e.changedTouches) beginStroke(t.identifier,stagePt(t)); },{passive:false});
+inkC.addEventListener("touchmove",e=>{ if(e.cancelable) e.preventDefault(); for(const t of e.changedTouches) moveStroke(t.identifier,stagePt(t)); },{passive:false});
+inkC.addEventListener("touchend",e=>{ if(e.cancelable) e.preventDefault(); for(const t of e.changedTouches) endStroke(t.identifier); },{passive:false});
+inkC.addEventListener("touchcancel",e=>{ for(const t of e.changedTouches) endStroke(t.identifier); },{passive:false});
+inkC.addEventListener("mousedown",e=>{ e.preventDefault(); beginStroke("m",stagePt(e)); });
+window.addEventListener("mousemove",e=>{ if(dActive.has("m")) moveStroke("m",stagePt(e)); });
+window.addEventListener("mouseup",()=>endStroke("m"));
+inkC.addEventListener("contextmenu",e=>e.preventDefault());
+onTap(document.getElementById("dClear"),()=>{ if(!dPassed) clearInk(); });
+onTap(document.getElementById("dSay"),drawPrompt);
+onTap(document.getElementById("dDone"),()=>checkDrawing(true));
+onTap(document.getElementById("dSkip"),nextDraw);
+onTap(document.getElementById("dCase"),()=>{ dCase=dCase==="upper"?"lower":"upper"; lsSet(DCASE_KEY,dCase); syncDrawToggles();
+  if(mode==="draw"&&!dPassed){ layoutDraw(); drawGuide(); clearInk(); drawPrompt(); } });
+onTap(document.getElementById("dOutline"),()=>{ dOutline=!dOutline; lsSet(DOUT_KEY,dOutline); syncDrawToggles(); drawGuide(); });
+let resizeT=null;
+window.addEventListener("resize",()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>{ if(mode==="test") layoutChoices(); if(mode==="draw"&&!dPassed){ layoutDraw(); drawGuide(); clearInk(); } },150); });
+
+// ---------- safety nets ----------
+// If a timer got lost (e.g. iOS suspended the app mid-celebration or mid-answer), recover instead of staying stuck.
+setInterval(()=>safe(()=>{
+  if(celebrating()&&celebrateAt&&Date.now()-celebrateAt>6000) endCelebration(true);
+  if(mode==="test"&&tBusy&&tBusyAt&&Date.now()-tBusyAt>3000) advance();
+  if(mode==="draw"&&dPassed&&dPassedAt&&Date.now()-dPassedAt>4000) nextDraw();
+}),1000);
+// iOS: speech/audio are often wedged after the app is backgrounded (home-screen app resumed later). Reset them.
+function onResume(){ safe(()=>{ if(synth){ synth.cancel(); if(synth.paused) synth.resume(); } lastUtter=null; stopClip(); }); }
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) safe(quiet); else onResume(); });
+window.addEventListener("pageshow",onResume);
 
 show("home");
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+if("serviceWorker" in navigator) safe(()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 </script>
 </body>
 </html>
