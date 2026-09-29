@@ -53,8 +53,14 @@
   #pClear{background:#999}#pDone{background:#2ecc71}
   #cRow{display:flex;align-items:center;gap:1.6vmin;flex:none;flex-wrap:wrap;justify-content:center}
   #cRow span{font-size:min(4.8vw,3.4vh,28px);color:#555;font-weight:bold}
-  @media (max-width:500px){#cRow span{flex-basis:100%;text-align:center}}
-  button.cn{flex:none;width:min(15vw,9vh,76px);height:min(11vw,7vh,56px);padding:0;border-radius:2vmin;background:#fff;border:.5vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(6vw,4vh,32px);touch-action:manipulation}
+  #opts{display:flex;flex-direction:column;align-items:center;gap:1.4vmin;flex:none}
+  @media (orientation:landscape){#opts{flex-direction:row;gap:5vmin}}
+  #vRow{display:flex;align-items:center;gap:1.6vmin;flex:none;flex-wrap:wrap;justify-content:center}
+  #vRow span{font-size:min(4.8vw,3.4vh,28px);color:#555;font-weight:bold}
+  @media (max-width:500px){#cRow span,#vRow span{flex-basis:100%;text-align:center}}
+  button.vs{flex:none;width:auto;height:max(36px,min(11vw,7vh,56px));padding:0 min(2.6vw,18px);border-radius:2vmin;background:#fff;border:.5vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(5vw,3.6vh,28px);touch-action:manipulation;white-space:nowrap}
+  button.vs.on{background:#8e44ad;border-color:#6c3483;color:#fff}
+  button.cn{flex:none;width:max(44px,min(15vw,9vh,76px));height:max(36px,min(11vw,7vh,56px));padding:0;border-radius:2vmin;background:#fff;border:.5vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(6vw,4vh,32px);touch-action:manipulation}
   button.cn.on{background:#3a86ff;border-color:#2a64c0;color:#fff}
   /* draw mode */
   #draw{padding:10px 12px 12px}
@@ -107,7 +113,10 @@
   <h2>Problem letters</h2>
   <p class="hint">Tap the letters that need extra practice</p>
   <div id="pGrid"></div>
-  <div id="cRow"><span>Choices in tests:</span><button class="cn" data-n="4">4</button><button class="cn" data-n="6">6</button><button class="cn" data-n="8">8</button><button class="cn" data-n="10">10</button></div>
+  <div id="opts">
+    <div id="cRow"><span>Choices in tests:</span><button class="cn" data-n="4">4</button><button class="cn" data-n="6">6</button><button class="cn" data-n="8">8</button><button class="cn" data-n="10">10</button></div>
+    <div id="vRow"><span>Voice speed:</span><button class="vs" data-v="slow">🐢 Slow</button><button class="vs" data-v="normal">Normal</button><button class="vs" data-v="fast">🐇 Fast</button></div>
+  </div>
   <div id="pBtns">
     <button id="pClear" class="big">Clear all</button>
     <button id="pDone" class="big">Done</button>
@@ -154,6 +163,10 @@ function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){}
 const PROB_KEY="lf-problem";
 let problems=new Set((Array.isArray(lsGet(PROB_KEY,[]))?lsGet(PROB_KEY,[]):[]).filter(l=>LETTERS.includes(l)));
 function saveProblems(){ lsSet(PROB_KEY,[...problems].sort()); }
+// voice speed: speech rate + recorded clip playback rate (pitch preserved)
+const VOICE_KEY="lf-voice", SPEEDS={slow:{tts:0.5,clip:0.75,wait:1.4},normal:{tts:0.75,clip:1.0,wait:1},fast:{tts:1.0,clip:1.15,wait:0.9}};
+let voiceSpeed=SPEEDS[lsGet(VOICE_KEY,"normal")]?lsGet(VOICE_KEY,"normal"):"normal";
+function spd(){ return SPEEDS[voiceSpeed]||SPEEDS.normal; }
 // number of answer choices in the tests (4 / 6 / 8 / 10)
 const CHOICES_KEY="lf-choices", CHOICE_OPTS=[4,6,8,10];
 let nChoices=CHOICE_OPTS.includes(lsGet(CHOICES_KEY,4))?lsGet(CHOICES_KEY,4):4;
@@ -183,13 +196,13 @@ function speak(text){
   const go=()=>{ speakT=null; try{
     const u=new SpeechSynthesisUtterance(text);
     if(voice) u.voice=voice;
-    u.rate=0.75; u.pitch=1.3; u.volume=0.9; u.lang="en-US";
+    u.rate=spd().tts; u.pitch=1.3; u.volume=0.9; u.lang="en-US";
     spokeOnce=true; lastUtter=u; // keep a reference: Safari drops end events for garbage-collected utterances
     u.onend=u.onerror=()=>{ if(lastUtter===u){ lastUtter=null; clearTimeout(speechWatchT); speechWatchT=null; } };
     if(synth.paused) synth.resume(); // iOS can come back from the background "paused"
     synth.speak(u);
     // watchdog: our phrases are short; if the engine is still "speaking" long after, it is wedged -> reset it
-    speechWatchT=setTimeout(()=>{ speechWatchT=null; try{ if(lastUtter===u&&(synth.speaking||synth.pending)){ synth.cancel(); } }catch(e){} lastUtter=null; },9000);
+    speechWatchT=setTimeout(()=>{ speechWatchT=null; try{ if(lastUtter===u&&(synth.speaking||synth.pending)){ synth.cancel(); } }catch(e){} lastUtter=null; },Math.round(9000*spd().wait));
   }catch(e){} };
   // Safari often swallows an utterance spoken immediately after cancel(); give it a moment.
   // (Only delay once speech has been unlocked by an earlier direct call; iOS needs the first speak() inside a tap.)
@@ -205,6 +218,8 @@ function playSound(l){
   try{
     clip=getClip(l);
     try{clip.currentTime=0;}catch(e){}
+    try{ clip.preservesPitch=true; clip.webkitPreservesPitch=true; clip.mozPreservesPitch=true;
+      clip.defaultPlaybackRate=spd().clip; clip.playbackRate=spd().clip; }catch(e){}
     const p=clip.play(); if(p&&p.catch) p.catch(()=>{});
   }catch(e){ clip=null; }
 }
@@ -410,7 +425,7 @@ function choose(b){
   if(b.dataset.l===tAnswer){
     tBusy=true; tBusyAt=Date.now(); tGood++; showCounts();
     // schedule the next question BEFORE any feedback, so nothing can leave the test stuck "busy"
-    clearTimeout(tNextT); tNextT=setTimeout(advance,1300);
+    clearTimeout(tNextT); tNextT=setTimeout(advance,Math.round(1300*spd().wait));
     b.classList.add("right");
     const f=document.getElementById("tFlash"); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),350);
     speak("Yes!");
@@ -436,8 +451,10 @@ function renderProblems(){
     pGrid.appendChild(b);
   });
 }
-function openSettings(){ stopAll(); mode="settings"; renderProblems(); renderChoiceOpts(); show("settings"); }
+function openSettings(){ stopAll(); mode="settings"; renderProblems(); renderChoiceOpts(); renderVoiceOpts(); show("settings"); }
 onTap(document.getElementById("pClear"),()=>{ problems.clear(); saveProblems(); renderProblems(); });
+function renderVoiceOpts(){ document.querySelectorAll("#vRow button.vs").forEach(b=>{ const on=b.dataset.v===voiceSpeed; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
+document.querySelectorAll("#vRow button.vs").forEach(b=>onTap(b,()=>{ voiceSpeed=b.dataset.v; lsSet(VOICE_KEY,voiceSpeed); renderVoiceOpts(); speak("This is "+voiceSpeed+"."); }));
 function renderChoiceOpts(){ document.querySelectorAll("#cRow button.cn").forEach(b=>{ const on=+b.dataset.n===nChoices; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
 document.querySelectorAll("#cRow button.cn").forEach(b=>onTap(b,()=>{ nChoices=+b.dataset.n; lsSet(CHOICES_KEY,nChoices); renderChoiceOpts(); }));
 onTap(document.getElementById("pDone"),goHome);
@@ -464,20 +481,52 @@ function layoutDraw(){
   for(const c of [guideC,inkC]){ c.width=Math.round(dW*dpr); c.height=Math.round(dH*dpr); }
   gctx.setTransform(dpr,0,0,dpr,0,0); ictx.setTransform(dpr,0,0,dpr,0,0);
   dLine=Math.max(14,Math.min(44,Math.min(dW,dH)*0.055));
+  glyphCache.clear();
   if(!dLetter) return;
-  const ch=dChar(); gctx.font=GLYPH_FONT; const m=gctx.measureText(ch);
+  dGlyph=glyphLayout(dChar());
+}
+// where a character sits when it is the letter to draw (fitted and centred in the stage)
+function glyphLayout(ch){
+  gctx.font=GLYPH_FONT; const m=gctx.measureText(ch);
   const L=m.actualBoundingBoxLeft||0, R=m.actualBoundingBoxRight||m.width, A=m.actualBoundingBoxAscent||70, D=m.actualBoundingBoxDescent||0;
   const gw=Math.max(1,L+R), gh=Math.max(1,A+D);
   const k=Math.min(dW*0.8/gw, dH*0.74/gh);
-  const size=100*k;
-  dGlyph={ch, font:GLYPH_FONT.replace("100px",size.toFixed(1)+"px"), x:dW/2-(R-L)*k/2, y:dH/2+(A-D)*k/2};
+  return {ch, font:GLYPH_FONT.replace("100px",(100*k).toFixed(1)+"px"), x:dW/2-(R-L)*k/2, y:dH/2+(A-D)*k/2};
 }
+// ordered centre-line paths of the target letter, in stage pixels (for the dotted tracing guide)
+function glyphPaths(){
+  const S=200/Math.max(dW,dH), w=Math.ceil(dW*S), h=Math.ceil(dH*S);
+  const K=thin(maskOf(c=>{ c.font=dGlyph.font; c.textBaseline="alphabetic"; c.textAlign="left"; c.fillText(dGlyph.ch,dGlyph.x,dGlyph.y); },w,h,S),w,h);
+  const at=(x,y)=>(x<0||y<0||x>=w||y>=h)?0:K[y*w+x];
+  const nb=(x,y)=>{ const r=[]; for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) if((dx||dy)&&at(x+dx,y+dy)) r.push([x+dx,y+dy]); return r; };
+  const cells=[]; for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(K[y*w+x]) cells.push([x,y,nb(x,y).length]);
+  cells.sort((a,b)=>a[2]-b[2]); // start from line ends
+  const seen=new Uint8Array(w*h), paths=[];
+  for(const [sx,sy] of cells){ if(seen[sy*w+sx]) continue; let x=sx,y=sy; const p=[];
+    for(let guard=0;guard<w*h;guard++){ seen[y*w+x]=1; p.push([(x+.5)/S,(y+.5)/S]);
+      const n=nb(x,y).filter(([a,b])=>!seen[b*w+a]); if(!n.length) break;
+      n.sort((a,b)=>(Math.abs(a[0]-x)+Math.abs(a[1]-y))-(Math.abs(b[0]-x)+Math.abs(b[1]-y))); [x,y]=n[0]; }
+    paths.push(p); }
+  return paths;
+}
+// Outline ON: a faint dotted centre line to trace, like a handwriting worksheet
 function drawGuide(){
   gctx.clearRect(0,0,dW,dH);
   if(!dOutline||!dGlyph) return;
-  gctx.font=dGlyph.font; gctx.textBaseline="alphabetic"; gctx.textAlign="left";
-  gctx.fillStyle="rgba(0,0,0,.12)"; gctx.fillText(dGlyph.ch,dGlyph.x,dGlyph.y);
-  gctx.lineWidth=3; gctx.strokeStyle="rgba(0,0,0,.18)"; gctx.lineJoin="round"; gctx.strokeText(dGlyph.ch,dGlyph.x,dGlyph.y);
+  const gap=Math.max(11,dLine*0.62), r=Math.max(3,dLine*0.2);
+  gctx.fillStyle="rgba(0,0,0,.32)";
+  const dot=(x,y)=>{ gctx.beginPath(); gctx.arc(x,y,r,0,Math.PI*2); gctx.fill(); };
+  const placed=[];
+  const near=(x,y)=>placed.some(([a,b])=>(a-x)*(a-x)+(b-y)*(b-y)<gap*gap*0.35);
+  for(const p of glyphPaths()){
+    if(p.length<3){ if(!near(p[0][0],p[0][1])){ dot(p[0][0],p[0][1]); placed.push(p[0]); } continue; }
+    let carry=gap; // always start a path with a dot
+    for(let i=0;i<p.length;i++){
+      if(i) carry+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);
+      const last=i===p.length-1;
+      if((carry>=gap||last&&carry>gap*0.5)&&!near(p[i][0],p[i][1])){ dot(p[i][0],p[i][1]); placed.push(p[i]); carry=0; }
+    }
+  }
 }
 function strokePath(ctx,s,lw){
   ctx.lineWidth=lw; ctx.lineCap="round"; ctx.lineJoin="round";
@@ -532,26 +581,40 @@ function thin(m,w,h){ // Zhang-Suen thinning -> 1px centre line of the letter (b
     if(!changed) break; }
   return m;
 }
-const DRAW_RULES={ // lenient, tuned for 4-year-olds (see test notes)
+const DRAW_RULES={ // tuned for 4-year-olds (see test notes)
   // covTol/precTol are fractions of the letter height. cov = share of the letter's centre line the ink passes near;
-  // prec = share of the ink that is on/near the letter; len = ink length / letter centre-line length (stops scribbling).
-  on: {covTol:0.07, precTol:0.04, cov:0.65, prec:0.65, len:2.4, minLen:0},
-  off:{covTol:0.08, precTol:0.05, cov:0.60, prec:0.65, len:2.0, minLen:0.5, aspect:1.5}};
-function evalDrawing(outlineOn, strks){
-  strks=strks||strokes;
-  const rule=outlineOn?DRAW_RULES.on:DRAW_RULES.off;
-  const res={pass:false,coverage:0,precision:0,len:0};
-  if(!dGlyph||!strks.length) return res;
-  const S=160/Math.max(dW,dH), w=Math.ceil(dW*S), h=Math.ceil(dH*S);
-  const G=maskOf(c=>{ c.font=dGlyph.font; c.textBaseline="alphabetic"; c.textAlign="left"; c.fillText(dGlyph.ch,dGlyph.x,dGlyph.y); },w,h,S);
+  // prec = share of the ink that is on/near the letter (extra strokes lower it); len = ink length / centre-line length.
+  on: {covTol:0.07, precTol:0.05, cov:0.65, prec:0.80, len:2.4, minLen:0},
+  off:{covTol:0.08, precTol:0.06, cov:0.60, prec:0.75, len:2.2, minLen:0.5, aspect:1.5},
+  margin:0.02}; // a look-alike letter must not fit the drawing better than the target by more than this
+// letters that are easy to draw instead of the target (same case)
+const CONFUSE={
+  C:"OGQ",O:"CQGD",G:"COQ",Q:"OGC",D:"OBP",E:"FB",F:"EPT",P:"RBF",R:"PBK",B:"PRED",I:"TLJ",L:"IE",T:"IFY",J:"IU",
+  U:"VJO",V:"UY",Y:"VXT",M:"NW",N:"MH",H:"NK",K:"RXH",X:"KY",W:"MV",A:"H",S:"Z",Z:"S",
+  a:"odq",b:"dph",d:"bqa",p:"qbn",q:"pdg",g:"q",n:"hmru",h:"nb",m:"nw",u:"vna",v:"uyw",w:"vm",r:"n",
+  c:"oe",o:"ca",e:"co",i:"lj",l:"it",t:"l",y:"vg",k:"hx",x:"k",s:"z",z:"s"};
+// accepted alternative shapes (a plain stick is a fine capital I)
+const ALT={I:"l"};
+const glyphCache=new Map();
+function glyphData(ch,w,h,S){ // mask, centre line and distance map of a character, cached per stage size
+  const key=ch+"|"+w+"x"+h; let g=glyphCache.get(key); if(g) return g;
+  const lay=(ch===dChar()&&dGlyph)?dGlyph:glyphLayout(ch);
+  const G=maskOf(c=>{ c.font=lay.font; c.textBaseline="alphabetic"; c.textAlign="left"; c.fillText(ch,lay.x,lay.y); },w,h,S);
   let gx0=w,gy0=h,gx1=-1,gy1=-1,gN=0;
   for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(G[y*w+x]){ gN++; if(x<gx0)gx0=x; if(x>gx1)gx1=x; if(y<gy0)gy0=y; if(y>gy1)gy1=y; }
-  if(!gN) return res;
-  const K=thin(Uint8Array.from(G),w,h); let kN=0; for(let i=0;i<w*h;i++) kN+=K[i];
-  if(!kN) return res;
+  const K=gN?thin(Uint8Array.from(G),w,h):new Uint8Array(w*h); let kN=0, kx0=w,ky0=h,kx1=-1,ky1=-1;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(K[y*w+x]){ kN++; if(x<kx0)kx0=x; if(x>kx1)kx1=x; if(y<ky0)ky0=y; if(y>ky1)ky1=y; }
+  g={G,K,gN,kN,Hg:gy1-gy0+1,kbox:[kx0,ky0,kx1,ky1],dGl:gN?chamfer(G,w,h):null};
+  glyphCache.set(key,g); return g;
+}
+// score one drawing against one character
+function scoreAgainst(ch,outlineOn,strks,w,h,S){
+  const rule=outlineOn?DRAW_RULES.on:DRAW_RULES.off;
+  const res={ch,pass:false,coverage:0,precision:0,len:0,f1:0};
+  const g=glyphData(ch,w,h,S); if(!g.gN||!g.kN) return res;
   let pts=strks;
   if(!outlineOn){ // from memory: move/scale the drawing's box onto the letter's centre-line box
-    let kx0=w,ky0=h,kx1=-1,ky1=-1; for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(K[y*w+x]){ if(x<kx0)kx0=x; if(x>kx1)kx1=x; if(y<ky0)ky0=y; if(y>ky1)ky1=y; }
+    const [kx0,ky0,kx1,ky1]=g.kbox;
     let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
     for(const s of strks) for(const [x,y] of s.p){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
     const bx0=(kx0+.5)/S, bx1=(kx1+.5)/S, by0=(ky0+.5)/S, by1=(ky1+.5)/S;
@@ -567,16 +630,31 @@ function evalDrawing(outlineOn, strks){
   const I=maskOf(c=>{ for(const s of pts) strokePath(c,s,dLine); },w,h,S);
   let iN=0; for(let i=0;i<w*h;i++) iN+=I[i];
   if(!iN) return res;
-  const dInk=chamfer(I,w,h), dGl=chamfer(G,w,h);
-  const Hg=gy1-gy0+1, tolCov=rule.covTol*Hg, tolPrec=rule.precTol*Hg;
-  let cov=0,prec=0; for(let i=0;i<w*h;i++){ if(K[i]&&dInk[i]<=tolCov) cov++; if(I[i]&&dGl[i]<=tolPrec) prec++; }
-  res.coverage=cov/kN; res.precision=prec/iN; res.len=len*S/kN; // ink length vs. letter centre-line length
+  const dInk=chamfer(I,w,h), tolCov=rule.covTol*g.Hg, tolPrec=rule.precTol*g.Hg;
+  let cov=0,prec=0; for(let i=0;i<w*h;i++){ if(g.K[i]&&dInk[i]<=tolCov) cov++; if(I[i]&&g.dGl[i]<=tolPrec) prec++; }
+  res.coverage=cov/g.kN; res.precision=prec/iN; res.len=len*S/g.kN;
+  res.f1=(res.coverage+res.precision)?2*res.coverage*res.precision/(res.coverage+res.precision):0;
   res.pass=res.coverage>=rule.cov&&res.precision>=rule.prec&&res.len<=rule.len&&res.len>=(rule.minLen||0);
+  return res;
+}
+function evalDrawing(outlineOn, strks){
+  strks=strks||strokes;
+  const empty={pass:false,coverage:0,precision:0,len:0,f1:0};
+  if(!dGlyph||!strks.length) return empty;
+  const S=160/Math.max(dW,dH), w=Math.ceil(dW*S), h=Math.ceil(dH*S), ch=dChar();
+  let res=scoreAgainst(ch,outlineOn,strks,w,h,S);
+  for(const a of (ALT[ch]||"")){ const r=scoreAgainst(a,outlineOn,strks,w,h,S); if(r.pass&&(!res.pass||r.f1>res.f1)) res=Object.assign(r,{ch}); }
+  if(!res.pass) return res;
+  // look-alike check: fail if another letter fits the drawing noticeably better (O drawn for C, E for F ...)
+  for(const c of (CONFUSE[ch]||"")){
+    const r=scoreAgainst(c,outlineOn,strks,w,h,S);
+    if(r.f1>res.f1+DRAW_RULES.margin){ res.pass=false; res.lookalike=c; res.lookalikeF1=r.f1; break; }
+  }
   return res;
 }
 function drawSuccess(){
   dPassed=true; dPassedAt=Date.now(); dActive.clear(); clearTimeout(dCheckT); dCheckT=null;
-  clearTimeout(dNextT); dNextT=setTimeout(nextDraw,1700); // schedule first: nothing can leave us stuck here
+  clearTimeout(dNextT); dNextT=setTimeout(nextDraw,Math.round(1700*spd().wait)); // schedule first: nothing can leave us stuck here
   dYay.classList.add("on"); speak("Yes! Great job!");
 }
 function checkDrawing(fromDone){
@@ -585,7 +663,7 @@ function checkDrawing(fromDone){
   if(r.pass) return drawSuccess();
   if(!fromDone) return; // on finger lift we only ever say "yes" - they may still be drawing
   const rule=dOutline?DRAW_RULES.on:DRAW_RULES.off;
-  if(r.precision<rule.prec||r.len>rule.len){ speak("Oops! Let's try again."); clearInk(); } // mostly off the letter / scribbled
+  if(r.lookalike||r.precision<rule.prec||r.len>rule.len){ speak("Oops! Let's try again."); clearInk(); } // mostly off the letter / scribbled
   else speak("Keep going!"); // on the letter, just not finished
 }
 // --- finger / mouse drawing ---
@@ -619,8 +697,8 @@ window.addEventListener("resize",()=>{ clearTimeout(resizeT); resizeT=setTimeout
 // If a timer got lost (e.g. iOS suspended the app mid-celebration or mid-answer), recover instead of staying stuck.
 setInterval(()=>safe(()=>{
   if(celebrating()&&celebrateAt&&Date.now()-celebrateAt>6000) endCelebration(true);
-  if(mode==="test"&&tBusy&&tBusyAt&&Date.now()-tBusyAt>3000) advance();
-  if(mode==="draw"&&dPassed&&dPassedAt&&Date.now()-dPassedAt>4000) nextDraw();
+  if(mode==="test"&&tBusy&&tBusyAt&&Date.now()-tBusyAt>4000) advance();
+  if(mode==="draw"&&dPassed&&dPassedAt&&Date.now()-dPassedAt>5000) nextDraw();
 }),1000);
 // iOS: speech/audio are often wedged after the app is backgrounded (home-screen app resumed later). Reset them.
 function onResume(){ safe(()=>{ if(synth){ synth.cancel(); if(synth.paused) synth.resume(); } lastUtter=null; stopClip(); }); }
