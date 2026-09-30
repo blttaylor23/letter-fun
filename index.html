@@ -233,13 +233,16 @@ function playSound(l){
   }catch(e){ clip=null; }
 }
 
-// ---------- voices: a recorded grown-up (Dad; Mom later) or the Computer (speech + sounds/ clips) ----------
+// ---------- voices: a recorded grown-up (Dad, Mom) or the Computer (speech + sounds/ clips) ----------
 // To add a voice: put its clips in voices/<id>/names/a-z.mp3, sounds/a-z.mp3 and phrases/<key>.mp3 (keys below),
 // then add one entry here. (The service worker also caches every voice listed here for offline use.)
+// lacks: phrases this voice didn't record; the Computer says those (never another grown-up's voice).
 const VOICES=[
   {id:"dad", label:"Dad", dir:"voices/dad/", joined:true}, // joined: has prompts/<phrase>_<letter>.mp3
+  {id:"mom", label:"Mom", dir:"voices/mom/", joined:true, lacks:["speed_slow","speed_normal","speed_fast"]},
   {id:"computer", label:"Computer", dir:null},
 ];
+function lacks(v,x){ return !!(x&&x.p&&v.lacks&&v.lacks.includes(x.p)); }
 const WHO_KEY="lf-voice-who";
 let voiceWho=VOICES.some(v=>v.id===lsGet(WHO_KEY,""))?lsGet(WHO_KEY,""):VOICES[0].id;
 function curVoice(){ return VOICES.find(v=>v.id===voiceWho)||VOICES[0]; }
@@ -256,7 +259,7 @@ const JOINED=["find","draw_upper","draw_lower"];
 function joinParts(v,parts){ // [{p:"find"},{n:"b"},...] -> [{j:"voices/dad/prompts/find_b.mp3",alt:[{p:"find"},{n:"b"}]},...]
   if(!v.dir||!v.joined||parts.length<2||!JOINED.includes(parts[0].p)||!parts[1].n) return parts;
   return [{j:v.dir+"prompts/"+parts[0].p+"_"+parts[1].n+".mp3",alt:parts.slice(0,2)}].concat(parts.slice(2)); }
-function voiceFiles(v){ if(!v.dir) return []; const f=[]; for(const l of LETTERS) f.push(v.dir+"names/"+l+".mp3",v.dir+"sounds/"+l+".mp3"); for(const k in PHRASES) f.push(v.dir+"phrases/"+k+".mp3");
+function voiceFiles(v){ if(!v.dir) return LETTERS.map(l=>"sounds/"+l+".mp3"); const f=[]; for(const l of LETTERS) f.push(v.dir+"names/"+l+".mp3",v.dir+"sounds/"+l+".mp3"); for(const k in PHRASES) if(!lacks(v,{p:k})) f.push(v.dir+"phrases/"+k+".mp3");
   if(v.joined) for(const k of JOINED) for(const l of LETTERS) f.push(v.dir+"prompts/"+k+"_"+l+".mp3"); return f; }
 const vLog=[]; // which files / speech actually played (checked by the tests)
 function logV(x){ vLog.push(x); if(vLog.length>400) vLog.splice(0,200); }
@@ -274,7 +277,7 @@ const warmed=new Set();
 function preloadParts(parts){
   const v=curVoice();
   if(!v.dir){ for(const x of parts) if(x.s) safe(getClip,x.s); return; }
-  for(const x of joinParts(v,parts)){ const u=clipUrl(v,x); if(warmed.has(u)) continue; warmed.add(u);
+  for(const x of joinParts(v,parts)){ if(lacks(v,x)) continue; const u=clipUrl(v,x); if(warmed.has(u)) continue; warmed.add(u);
     safe(()=>fetch(u).then(r=>r.ok?r.arrayBuffer():Promise.reject()).catch(()=>warmed.delete(u))); }
 }
 // Computer voice (and the fallback when a recording can't play): speech for words, sounds/ clip for a letter sound
@@ -288,6 +291,7 @@ function utter(parts){
   const step=()=>{
     if(gen!==vGen) return;
     let over=false, started=false; const url=clipUrl(v,parts[i]);
+    if(lacks(v,parts[i])){ logV("lack:"+url); const rest=parts.slice(i); stopVoice(); computerSay(rest.map(x=>x.j?x.alt:[x]).flat()); return; } // not recorded -> Computer
     const fail=()=>{ if(gen!==vGen||over) return; over=true; logV("fail:"+url);
       if(parts[i].j){ clearTimeout(vWatchT); parts=parts.slice(0,i).concat(parts[i].alt,parts.slice(i+1)); vGapT=setTimeout(step,0); return; } // joined clip missing -> the separate clips (next task: WebKit aborts a play() started inside the error event)
       const rest=parts.slice(i); stopVoice(); computerSay(rest.map(x=>x.j?x.alt:[x]).flat()); };
@@ -605,10 +609,10 @@ function openSettings(){ stopAll(); mode="settings"; renderProblems(); renderCho
 onTap(document.getElementById("pClear"),()=>{ problems.clear(); saveProblems(); renderProblems(); });
 function renderVoiceOpts(){ document.querySelectorAll("#vRow button.vs").forEach(b=>{ const on=b.dataset.v===voiceSpeed; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
 document.querySelectorAll("#vRow button.vs").forEach(b=>onTap(b,()=>{ voiceSpeed=b.dataset.v; lsSet(VOICE_KEY,voiceSpeed); renderVoiceOpts(); utter([{p:"speed_"+voiceSpeed}]); }));
-// who speaks: Dad (recorded) / Computer; buttons come from VOICES
+// who speaks: Dad / Mom (recorded) / Computer; buttons come from VOICES
 const wRow=document.getElementById("wRow");
 VOICES.forEach(v=>{ const b=document.createElement("button"); b.className="vs vw"; b.dataset.w=v.id; b.textContent=v.label; wRow.appendChild(b);
-  onTap(b,()=>{ voiceWho=v.id; lsSet(WHO_KEY,voiceWho); renderWhoOpts(); utter([{p:"find"},{n:"a"}]); }); });
+  onTap(b,()=>{ voiceWho=v.id; lsSet(WHO_KEY,voiceWho); renderWhoOpts(); utter([{p:"find"},{n:"a"}]); cacheVoices(); }); });
 function renderWhoOpts(){ wRow.querySelectorAll("button.vw").forEach(b=>{ const on=b.dataset.w===voiceWho; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
 function renderChoiceOpts(){ document.querySelectorAll("#cRow button.cn").forEach(b=>{ const on=+b.dataset.n===nChoices; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
 document.querySelectorAll("#cRow button.cn").forEach(b=>onTap(b,()=>{ nChoices=+b.dataset.n; lsSet(CHOICES_KEY,nChoices); renderChoiceOpts(); }));
@@ -1007,12 +1011,16 @@ document.addEventListener("visibilitychange",()=>{ if(document.hidden) safe(quie
 window.addEventListener("pageshow",onResume);
 
 show("home");
+// offline sound cache: every voice's clips, the selected voice first (sent again when the voice changes, so it jumps the queue)
+function audioList(){ const cur=curVoice(); return [].concat(voiceFiles(cur),...VOICES.filter(v=>v!==cur).map(voiceFiles)).filter((f,i,a)=>a.indexOf(f)===i); }
+let swReady=false;
+function cacheVoices(){ if(!swReady) return; safe(()=>{ const w=navigator.serviceWorker.controller; if(w) w.postMessage({type:"cache-voices",files:audioList()}); }); }
 // v17: the service worker is registered after the page has loaded, and it fills the offline sound cache in the
 // background a few seconds later, so neither ever slows down opening the app or the first sounds.
 if("serviceWorker" in navigator) safe(()=>{
   const go=()=>safe(()=>{
     navigator.serviceWorker.register("sw.js").catch(()=>{});
-    navigator.serviceWorker.ready.then(reg=>{ setTimeout(()=>safe(()=>{ if(reg.update) reg.update().catch(()=>{}); /* look for a new version on every launch */ const files=[].concat(...VOICES.map(voiceFiles)); const w=reg.active||navigator.serviceWorker.controller; if(w) w.postMessage({type:"cache-voices",files}); }),3000); }).catch(()=>{});
+    navigator.serviceWorker.ready.then(reg=>{ setTimeout(()=>safe(()=>{ if(reg.update) reg.update().catch(()=>{}); /* look for a new version on every launch */ swReady=true; const w=reg.active||navigator.serviceWorker.controller; if(w) w.postMessage({type:"cache-voices",files:audioList()}); }),3000); }).catch(()=>{});
   });
   if(document.readyState==="complete") go(); else window.addEventListener("load",go);
 });
