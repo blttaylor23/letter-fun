@@ -1,4 +1,4 @@
-const C="letter-fun-v18";            // app shell (index.html, icons ...): replaced on every release
+const C="letter-fun-v19";            // app shell (index.html, icons ...): replaced on every release
 const A="letter-fun-audio-1";        // recorded clips: kept across releases (bump only when clips change), filled lazily
 const L="abcdefghijklmnopqrstuvwxyz".split("");
 const VOICE_DIRS=["voices/dad/"];   // safety net only: the page sends the full list (every voice, the selected one first)

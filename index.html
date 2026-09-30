@@ -199,19 +199,21 @@ function hush(){
   return busy;
 }
 function speak(text){
-  if(!synth||typeof SpeechSynthesisUtterance==="undefined") return;
+  const cb=sayCb; // v19: whoever waits for this utterance hears when it ends
+  if(!synth||typeof SpeechSynthesisUtterance==="undefined"){ saidEnd(cb); return; }
   const justCancelled=hush()||Date.now()-cancelAt<150;
   const go=()=>{ speakT=null; try{
     const u=new SpeechSynthesisUtterance(text);
     if(voice) u.voice=voice;
     u.rate=spd().tts; u.pitch=1.3; u.volume=0.9; u.lang="en-US";
     spokeOnce=true; lastUtter=u; logV("tts:"+text); // keep a reference: Safari drops end events for garbage-collected utterances
-    u.onend=u.onerror=()=>{ if(lastUtter===u){ lastUtter=null; clearTimeout(speechWatchT); speechWatchT=null; } };
+    u.onend=u.onerror=()=>{ if(lastUtter===u){ lastUtter=null; clearTimeout(speechWatchT); speechWatchT=null; } saidEnd(cb); };
+    u.onstart=()=>saidStart(cb,0);
     if(synth.paused) synth.resume(); // iOS can come back from the background "paused"
     synth.speak(u);
     // watchdog: our phrases are short; if the engine is still "speaking" long after, it is wedged -> reset it
-    speechWatchT=setTimeout(()=>{ speechWatchT=null; try{ if(lastUtter===u&&(synth.speaking||synth.pending)){ synth.cancel(); } }catch(e){} lastUtter=null; },Math.round(9000*spd().wait));
-  }catch(e){} };
+    speechWatchT=setTimeout(()=>{ speechWatchT=null; try{ if(lastUtter===u&&(synth.speaking||synth.pending)){ synth.cancel(); } }catch(e){} lastUtter=null; saidEnd(cb); },Math.round(9000*spd().wait));
+  }catch(e){ saidEnd(cb); } };
   // Safari often swallows an utterance spoken immediately after cancel(); give it a moment.
   // (Only delay once speech has been unlocked by an earlier direct call; iOS needs the first speak() inside a tap.)
   if(justCancelled&&spokeOnce) speakT=setTimeout(go,120); else go();
@@ -222,15 +224,16 @@ const CLIPS={}; let clip=null;
 function getClip(l){ if(!CLIPS[l]){ const a=new Audio("sounds/"+l+".mp3"); a.preload="auto"; CLIPS[l]=a; } return CLIPS[l]; }
 function stopClip(){ if(clip){ try{clip.pause(); clip.currentTime=0;}catch(e){} clip=null; } }
 function playSound(l){
-  hush(); stopClip();
+  hush(); stopClip(); const cb=sayCb;
   try{
-    clip=getClip(l);
+    clip=getClip(l); const me=clip;
+    me.onended=me.onerror=()=>{ if(clip===me) saidEnd(cb); }; me.onplaying=()=>{ if(clip===me) saidStart(cb,me.duration/spd().clip); };
     try{clip.currentTime=0;}catch(e){}
     try{ clip.preservesPitch=true; clip.webkitPreservesPitch=true; clip.mozPreservesPitch=true;
       clip.defaultPlaybackRate=spd().clip; clip.playbackRate=spd().clip; }catch(e){}
     logV("clip:sounds/"+l+".mp3");
-    const p=clip.play(); if(p&&p.catch) p.catch(()=>{});
-  }catch(e){ clip=null; }
+    const p=clip.play(); if(p&&p.catch) p.catch(err=>{ if(clip===me&&!(err&&err.name==="AbortError")) saidEnd(cb); });
+  }catch(e){ clip=null; saidEnd(cb); }
 }
 
 // ---------- voices: a recorded grown-up (Dad, Mom) or the Computer (speech + sounds/ clips) ----------
@@ -283,8 +286,12 @@ function preloadParts(parts){
 // Computer voice (and the fallback when a recording can't play): speech for words, sounds/ clip for a letter sound
 function computerSay(parts){ const t=partsText(parts), snd=parts.find(x=>x.s); if(t) speak(t); else if(snd) playSound(snd.s); }
 // Say something. Always cancels whatever is playing or queued. Never blocks: game logic runs on its own timers.
-function utter(parts){
-  quiet();
+// v19: the listener of the utterance in progress ({start(seconds), end()}); quiet() ends it (interrupted = over)
+let sayCb=null;
+function saidStart(cb,d){ if(cb&&cb===sayCb&&cb.start) safe(()=>cb.start(d)); }
+function saidEnd(cb){ if(cb&&cb===sayCb){ sayCb=null; if(cb.end) safe(()=>cb.end()); } }
+function utter(parts,cb){
+  quiet(); sayCb=cb||null;
   const v=curVoice();
   if(!v.dir||!vA){ computerSay(parts); return; }
   const gen=vGen; let i=0; parts=joinParts(v,parts);
@@ -296,11 +303,12 @@ function utter(parts){
       if(parts[i].j){ clearTimeout(vWatchT); parts=parts.slice(0,i).concat(parts[i].alt,parts.slice(i+1)); vGapT=setTimeout(step,0); return; } // joined clip missing -> the separate clips (next task: WebKit aborts a play() started inside the error event)
       const rest=parts.slice(i); stopVoice(); computerSay(rest.map(x=>x.j?x.alt:[x]).flat()); };
     const done=()=>{ if(gen!==vGen||over) return; over=true; clearTimeout(vWatchT); i++;
-      if(i<parts.length) vGapT=setTimeout(step,Math.round(CLIP_GAP_MS*spd().wait)); else vA.onended=vA.onerror=vA.onplaying=null; };
+      if(i<parts.length) vGapT=setTimeout(step,Math.round(CLIP_GAP_MS*spd().wait)); else { vA.onended=vA.onerror=vA.onplaying=null; saidEnd(cb); } };
     try{
       vA.onerror=fail; vA.onended=done;
       vA.onplaying=()=>{ if(gen!==vGen||over||started) return; started=true; clearTimeout(vWatchT);
-        const d=(isFinite(vA.duration)&&vA.duration>0)?vA.duration:3; vWatchT=setTimeout(done,Math.round(d/spd().clip*1000+1500)); };
+        const d=(isFinite(vA.duration)&&vA.duration>0)?vA.duration:3; vWatchT=setTimeout(done,Math.round(d/spd().clip*1000+1500));
+        saidStart(cb,(isFinite(vA.duration)&&vA.duration>0)?vA.duration/spd().clip:0); };
       vRate(); vA.src=url; vRate(); logV("play:"+url);
       const pr=vA.play(); if(pr&&pr.catch) pr.catch(err=>{ if(!(err&&err.name==="AbortError")) fail(); });
       clearTimeout(vWatchT); vWatchT=setTimeout(()=>{ if(!started) fail(); },2500); // not playing yet (slow / offline) -> speak it instead
@@ -308,7 +316,23 @@ function utter(parts){
   };
   step();
 }
-function quiet(){ hush(); stopClip(); stopVoice(); }
+function quiet(){ hush(); stopClip(); stopVoice(); saidEnd(sayCb); }
+// v19: move on only once the feedback has been heard: never before minMs (the old fixed delays, so Dad and the
+// Computer feel the same), and not before the clip/speech has ended + 0.3 s. Safety cap so the game never hangs:
+// clip length (at the current speed) + 1.5 s from when it starts playing; 4 s while its length is unknown.
+const AFTER_SAID_MS=300, SAID_CAP_UNKNOWN_MS=4000, SAID_CAP_EXTRA_MS=1500;
+function afterSaid(parts,minMs,fn){
+  let over=false, minOk=false, heard=false, capT=null, tailT=null;
+  const h={cancel(){ over=true; clearTimeout(minT); clearTimeout(capT); clearTimeout(tailT); }};
+  const go=()=>{ if(over||!minOk||!heard) return; h.cancel(); safe(fn); };
+  const minT=setTimeout(()=>{ minOk=true; go(); },minMs);
+  const cap=ms=>{ clearTimeout(capT); capT=setTimeout(()=>{ heard=true; go(); },ms); };
+  cap(SAID_CAP_UNKNOWN_MS);
+  utter(parts,{start(d){ if(d>0&&isFinite(d)) cap(Math.round(d*1000)+SAID_CAP_EXTRA_MS); },
+               end(){ clearTimeout(tailT); tailT=setTimeout(()=>{ heard=true; go(); },AFTER_SAID_MS); }});
+  return h;
+}
+function clearWait(h){ if(h&&h.cancel) h.cancel(); else clearTimeout(h); }
 
 // ---------- reliable taps ----------
 // Act on touchend (a user gesture on iOS, so audio/speech still unlock). iOS suppresses "click" when a second
@@ -383,15 +407,14 @@ function say(){
 let celebrateT=null, celebrateAt=0;
 function celebrating(){ return doneEl.style.display==="flex"; }
 function endCelebration(restart){
-  clearTimeout(celebrateT); celebrateT=null; celebrateAt=0;
+  clearWait(celebrateT); celebrateT=null; celebrateAt=0;
   doneEl.style.display="none";
   if(restart&&mode==="practice") startRound();
 }
 function celebrate(){
   doneEl.style.display="flex"; celebrateAt=Date.now();
-  // schedule the exit BEFORE speaking, so a speech failure can never leave the overlay up
-  clearTimeout(celebrateT); celebrateT=setTimeout(()=>endCelebration(true),4000);
-  utter([{p:"all_green"}]);
+  // the exit is scheduled together with the speech (4 s minimum, capped), so a speech failure can never leave the overlay up
+  clearWait(celebrateT); celebrateT=afterSaid([{p:"all_green"}],4000,()=>endCelebration(true));
 }
 // tapping the celebration screen (after a moment) skips it, so it can never trap the kids
 onTap(doneEl,()=>{ if(Date.now()-celebrateAt>1200) endCelebration(true); });
@@ -427,7 +450,7 @@ document.addEventListener("gesturestart",e=>e.preventDefault());
 let mode="home";
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));}
 function stopAll(){
-  quiet(); clearTimeout(tNextT); tNextT=null; tBusy=false; tBusyAt=0;
+  quiet(); clearWait(tNextT); tNextT=null; tBusy=false; tBusyAt=0;
   endCelebration(false); resetGreen(); resetRed();
   drawStop();
 }
@@ -569,7 +592,7 @@ function fitPractice(){
   el.style.paddingLeft=Math.max(0,2*dx).toFixed(1)+"px"; el.style.paddingRight=Math.max(0,-2*dx).toFixed(1)+"px";
 }
 function advance(){
-  clearTimeout(tNextT); tNextT=null;
+  clearWait(tNextT); tNextT=null;
   if(mode!=="test") return;
   tIdx++; askQuestion();
 }
@@ -577,11 +600,10 @@ function choose(b){
   if(mode!=="test"||tBusy||!b.isConnected) return;
   if(b.dataset.l===tAnswer){
     tBusy=true; tBusyAt=Date.now(); tGood++; showCounts();
-    // schedule the next question BEFORE any feedback, so nothing can leave the test stuck "busy"
-    clearTimeout(tNextT); tNextT=setTimeout(advance,Math.round(1300*spd().wait));
     b.classList.add("right");
     const f=document.getElementById("tFlash"); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),350);
-    utter([{p:"yes"}]);
+    // next question once "Yes!" has been heard (1.3 s minimum as before; capped, so nothing can leave the test stuck "busy")
+    clearWait(tNextT); tNextT=afterSaid([{p:"yes"}],Math.round(1300*spd().wait),advance);
   }else{
     tBad++; showCounts(); // every wrong tap counts
     b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); // replay the shake
@@ -626,7 +648,7 @@ const dStage=document.getElementById("dStage"), guideC=document.getElementById("
 const gctx=guideC.getContext("2d"), ictx=inkC.getContext("2d"), mctx=demoC.getContext("2d");
 const INK=["#e63946","#3a86ff","#2a9d8f","#f4a261","#8e44ad","#e76f51","#27ae60","#d81b60"];
 let dLetter=null, dPrev=null, strokes=[], dActive=new Map(), dW=0, dH=0, dLine=20, dGlyph=null, dLines=null;
-let dPassed=false, dPassedAt=0, dNextT=null, dCheckT=null, inkN=0, dRetries=0;
+let dPassed=false, dPassedAt=0, dNextT=null, dDemoH=null, dCheckT=null, inkN=0, dRetries=0;
 function dChar(){ return dCase==="upper"?dLetter.toUpperCase():dLetter; }
 function syncDrawToggles(){
   document.getElementById("dCase").textContent=dCase==="upper"?"ABC":"abc";
@@ -774,12 +796,12 @@ function drawPrompt(){ if(mode!=="draw"||!dLetter) return;
   utter([{p:dCase==="upper"?"draw_upper":"draw_lower"},{n:dLetter}]); }
 function nextDraw(){
   if(mode!=="draw") return;
-  stopDemo(); clearTimeout(dNextT); dNextT=null; dPassed=false; dPassedAt=0; dYay.classList.remove("on");
+  stopDemo(); clearWait(dNextT); dNextT=null; clearWait(dDemoH); dDemoH=null; dPassed=false; dPassedAt=0; dYay.classList.remove("on");
   dPrev=dLetter; dLetter=pickDrawLetter(); dRetries=0;
   layoutDraw(); drawGuide(); clearInk(); preloadParts([{p:dCase==="upper"?"draw_upper":"draw_lower"},{n:dLetter},{p:"yes_great_job"},{p:"try_again"}]); drawPrompt();
 }
 function startDraw(){ stopAll(); mode="draw"; show("draw"); syncDrawToggles(); dLetter=null; nextDraw(); }
-function drawStop(){ stopDemo(); clearTimeout(dNextT); dNextT=null; clearTimeout(dCheckT); dCheckT=null; dActive.clear(); dPassed=false; dPassedAt=0; dYay.classList.remove("on"); }
+function drawStop(){ stopDemo(); clearWait(dNextT); dNextT=null; clearWait(dDemoH); dDemoH=null; clearTimeout(dCheckT); dCheckT=null; dActive.clear(); dPassed=false; dPassedAt=0; dYay.classList.remove("on"); }
 
 // ---------- "show me": the letter writes itself, stroke by stroke, in the right order and direction ----------
 let demoRaf=0, demoT=null, demoOn=false;
@@ -954,8 +976,9 @@ function evalDrawing(outlineOn, strks){
 }
 function drawSuccess(){
   stopDemo(); dPassed=true; dPassedAt=Date.now(); dActive.clear(); clearTimeout(dCheckT); dCheckT=null;
-  clearTimeout(dNextT); dNextT=setTimeout(nextDraw,Math.round(1700*spd().wait)); // schedule first: nothing can leave us stuck here
-  dYay.classList.add("on"); utter([{p:"yes_great_job"}]);
+  clearWait(dDemoH); dDemoH=null; dYay.classList.add("on");
+  // next letter once "Yes! Great job!" has been heard (1.7 s minimum as before; capped: nothing can leave us stuck here)
+  clearWait(dNextT); dNextT=afterSaid([{p:"yes_great_job"}],Math.round(1700*spd().wait),nextDraw);
 }
 function checkDrawing(fromDone){
   if(mode!=="draw"||dPassed||!strokes.length){ if(fromDone&&mode==="draw"&&!dPassed) drawPrompt(); return; }
@@ -966,11 +989,14 @@ function checkDrawing(fromDone){
 }
 // Done pressed and it isn't the letter: wipe the drawing for them, "Try again", show how it's written, same letter again
 function drawRetry(){
-  dRetries++; clearInk(); drawGuide(); utter([{p:"try_again"}]); playDemo(900);
+  dRetries++; clearInk(); drawGuide();
+  // the demo starts once "Try again" has been heard (0.9 s minimum as before), unless they have started drawing
+  const L=dLetter, k=dRetries; clearWait(dDemoH);
+  dDemoH=afterSaid([{p:"try_again"}],900,()=>{ dDemoH=null; if(mode==="draw"&&dLetter===L&&dRetries===k&&!dPassed&&!strokes.length&&!demoOn) playDemo(0); });
 }
 // --- finger / mouse drawing ---
 function stagePt(e){ const r=inkC.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
-function beginStroke(key,pt){ if(mode!=="draw"||dPassed) return; if(demoOn) stopDemo(); clearTimeout(dCheckT); dCheckT=null; // touching the canvas stops the demo: their turn
+function beginStroke(key,pt){ if(mode!=="draw"||dPassed) return; if(demoOn) stopDemo(); clearWait(dDemoH); dDemoH=null; clearTimeout(dCheckT); dCheckT=null; // touching the canvas stops the demo: their turn
   const s={c:INK[inkN++%INK.length],p:[pt]}; strokes.push(s); dActive.set(key,s); ictx.fillStyle=s.c; strokePath(ictx,s,dLine); }
 function moveStroke(key,pt){ const s=dActive.get(key); if(!s) return; const l=s.p[s.p.length-1];
   if(Math.abs(pt[0]-l[0])+Math.abs(pt[1]-l[1])<2) return; s.p.push(pt);
@@ -1001,9 +1027,10 @@ if(window.ResizeObserver){ const ro=new ResizeObserver(()=>{ clearTimeout(resize
 // ---------- safety nets ----------
 // If a timer got lost (e.g. iOS suspended the app mid-celebration or mid-answer), recover instead of staying stuck.
 setInterval(()=>safe(()=>{
-  if(celebrating()&&celebrateAt&&Date.now()-celebrateAt>6000) endCelebration(true);
-  if(mode==="test"&&tBusy&&tBusyAt&&Date.now()-tBusyAt>4000) advance();
-  if(mode==="draw"&&dPassed&&dPassedAt&&Date.now()-dPassedAt>5000) nextDraw();
+  // (v19: above the longest feedback wait - a clip may start up to 2.5 s late, then plays at 0.75x, + 1.5 s cap)
+  if(celebrating()&&celebrateAt&&Date.now()-celebrateAt>9000) endCelebration(true);
+  if(mode==="test"&&tBusy&&tBusyAt&&Date.now()-tBusyAt>7000) advance();
+  if(mode==="draw"&&dPassed&&dPassedAt&&Date.now()-dPassedAt>8000) nextDraw();
 }),1000);
 // iOS: speech/audio are often wedged after the app is backgrounded (home-screen app resumed later). Reset them.
 function onResume(){ safe(()=>{ if(synth){ synth.cancel(); if(synth.paused) synth.resume(); } lastUtter=null; stopClip(); stopVoice(); }); }
