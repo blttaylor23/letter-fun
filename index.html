@@ -97,6 +97,9 @@
   #choices{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2vmin;padding:1vmin;box-sizing:border-box}
   button.choice{flex:none;width:100%;height:100%;min-height:0;min-width:0;background:#fff;border:.8vmin solid #e0d6c2;border-radius:4vmin;font-weight:bold;line-height:.5;touch-action:manipulation;overflow:hidden;font-family:inherit;padding:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap}
   #choices button.choice{font-size:var(--fs,min(28vw,26vh));padding:var(--pt,0px) 0 var(--pb,0px)}
+  button.choice svg.glyph,#letter svg.glyph{width:82%;height:82%;flex:none;overflow:visible;pointer-events:none;display:block}
+  #letter.ms{font-size:0;line-height:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:0 !important}
+  #letter.ms svg.glyph{width:88%;height:88%}
   button.choice.right{background:#2ecc71;border-color:#1e8449;color:#fff !important}
   button.choice.wrong{background:#e74c3c;border-color:#a93226;color:#fff !important;animation:shake .4s}
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4vmin)}40%{transform:translateX(4vmin)}60%{transform:translateX(-3vmin)}80%{transform:translateX(3vmin)}}
@@ -409,7 +412,7 @@ function next(){
     queue=shuffle(reds); reds=[];
   }
   current=queue.shift(); taps=0;
-  el.textContent=current; fitPractice();
+  setLetterGlyph(el, current); fitPractice();
   el.style.color=colors[Math.floor(Math.random()*colors.length)];
   top_.textContent="Green: "+greens+" of "+total;
   quiet();
@@ -520,7 +523,8 @@ function askQuestion(){
   choicesEl.innerHTML="";
   opts.forEach((l,i)=>{
     const b=document.createElement("button");
-    b.className="choice"; b.textContent=upper?l.toUpperCase():l; b.dataset.l=l;
+    b.className="choice"; b.dataset.l=l; b.dataset.ch=upper?l.toUpperCase():l;
+    setLetterGlyph(b, b.dataset.ch);
     b.style.color=colors[(i+tIdx*3)%colors.length];
     onTap(b,()=>choose(b));
     b.addEventListener("contextmenu",e=>e.preventDefault());
@@ -596,17 +600,20 @@ function layoutChoices(){
   // centre every glyph on its own ink box (top of its ascender, cap or x-height down to its descender), so a p/q/y/j/g
   // is lifted as far as it hangs below the line and every letter gets the same space above and below
   choicesEl.style.setProperty("--pt","0px"); choicesEl.style.setProperty("--pb","0px");
-  for(const b of choicesEl.children){ const g=ink.per[b.textContent]||[ink.asc,ink.desc,0];
+  for(const b of choicesEl.children){
+    if(b.querySelector("svg.glyph")){ b.style.padding="0"; continue; } // manuscript SVG already fitted in its viewBox
+    const g=ink.per[b.dataset.ch||b.textContent]||[ink.asc,ink.desc,0];
     const [pt,pb]=padOf(-((ink.A-ink.D)/2+(g[1]-g[0])/2)*best.fs), [pl,pr]=padOf(-g[2]*best.fs); // and left/right on its ink, not its advance
     b.style.paddingTop=pt; b.style.paddingBottom=pb; b.style.paddingLeft=pl; b.style.paddingRight=pr; }
 }
 // practice card: the same ink fit for all 52 letters inside the letter area (room left for the tap "pop")
 function fitPractice(){
   const box=document.getElementById("letterBox"), w=box.clientWidth, h=box.clientHeight; if(!w||!h) return;
+  if(el.querySelector("svg.glyph")){ el.style.fontSize=""; el.style.padding="0"; return; } // manuscript SVG fills #letter.ms
   const ink=inkOf(LOWERS+UPPERS,getComputedStyle(el).fontFamily);
   const m=Math.min(w,h)*0.04, POP=1.15, f=inkFit(Object.assign({},ink,{asc:ink.tall,desc:0}),w/POP,h/POP,m/POP,Math.min(window.innerHeight*0.45,window.innerWidth*0.6));
   // same size for every letter; each one centred on its own ink box
-  const g=ink.per[el.textContent]||[ink.asc,ink.desc,0], dy=-((ink.A-ink.D)/2+(g[1]-g[0])/2)*f.fs, dx=-g[2]*f.fs;
+  const g=ink.per[el.dataset.ch||el.textContent]||[ink.asc,ink.desc,0], dy=-((ink.A-ink.D)/2+(g[1]-g[0])/2)*f.fs, dx=-g[2]*f.fs;
   el.style.fontSize=f.fs+"px"; el.style.paddingTop=Math.max(0,2*dy).toFixed(1)+"px"; el.style.paddingBottom=Math.max(0,-2*dy).toFixed(1)+"px";
   el.style.paddingLeft=Math.max(0,2*dx).toFixed(1)+"px"; el.style.paddingRight=Math.max(0,-2*dx).toFixed(1)+"px";
 }
@@ -735,7 +742,7 @@ const SHAPES=(()=>{
     n:[P(0,.5,0,1),bump(0,.44,.16)],
     o:[A(.26,.75,.26,.25,-90,-450)],
     p:[P(0,.5,0,1.42),bowlR(0)],
-    q:[bowlL(0),J(P(.5,.5,.5,1.32),A(.72,1.32,.22,.2,180,45))],   // v20: descender with a clear rightward preschool curl (Dad's chart hook, bigger)
+    q:[bowlL(0),J(P(.5,.5,.5,1.35),A(.68,1.35,.18,.16,180,-25))], // v21: descender curls up+right like Dad's chart (small fishhook)
     r:[P(0,.5,0,1),A(.2,.66,.2,.16,180,305)],
     s:[J(A(.18,.625,.17,.125,-30,-270),A(.18,.875,.18,.125,-90,150))],
     t:[P(.2,.18,.2,1),P(0,.5,.4,.5)],                                  // chart: shorter stick, bar on the midline
@@ -756,6 +763,23 @@ const SHAPES=(()=>{
   };
 })();
 const ALT={M:["M~"],W:["W~"],G:["G~"],K:["K~"],t:["t~"],y:["y~"],a:["a~"]}; // accepted alternatives (v20: straight q no longer accepted — the curl is required)
+// Paint a letter as a thick manuscript SVG from SHAPES (tiles + practice), so lowercase q shows the chart hook — not Comic Sans's blunt tail.
+function glyphSvg(ch){
+  const sh=SHAPES[ch]||SHAPES[ch.toLowerCase()]; if(!sh) return null;
+  const [x0,y0,x1,y1]=shapeBox(sh); const span=Math.max(x1-x0,y1-y0,0.35), sw=span*0.17, pad=sw*0.8;
+  let body="";
+  for(const s of sh){
+    if(s.length<2){ body+=`<circle cx="${s[0][0]}" cy="${s[0][1]}" r="${(sw*0.85).toFixed(3)}" fill="currentColor"/>`; continue; }
+    let d=`M${s[0][0].toFixed(3)} ${s[0][1].toFixed(3)}`; for(let i=1;i<s.length;i++) d+=`L${s[i][0].toFixed(3)} ${s[i][1].toFixed(3)}`;
+    body+=`<path d="${d}" fill="none" stroke="currentColor" stroke-width="${sw.toFixed(3)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  return `<svg class="glyph" viewBox="${(x0-pad).toFixed(3)} ${(y0-pad).toFixed(3)} ${(x1-x0+2*pad).toFixed(3)} ${(y1-y0+2*pad).toFixed(3)}" aria-hidden="true" preserveAspectRatio="xMidYMid meet">${body}</svg>`;
+}
+function setLetterGlyph(node, ch){
+  const svg=glyphSvg(ch);
+  if(svg){ node.innerHTML=svg; node.dataset.ch=ch; node.classList.add("ms"); node.setAttribute("aria-label", ch); }
+  else { node.textContent=ch; node.dataset.ch=ch; node.classList.remove("ms"); node.removeAttribute("aria-label"); }
+}
 const SAME_CASE_OK="copsuvwxyz"; // upper/lower have the same shape: either case is fine
 const ALL52=LETTERS.concat(LETTERS.map(l=>l.toUpperCase()));
 function shapeBox(sh){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; for(const s of sh) for(const [x,y] of s){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } return [x0,y0,x1,y1]; }
