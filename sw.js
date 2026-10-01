@@ -1,10 +1,10 @@
-const C="letter-fun-v19";            // app shell (index.html, icons ...): replaced on every release
-const A="letter-fun-audio-1";        // recorded clips: kept across releases (bump only when clips change), filled lazily
+const C="letter-fun-v20";            // app shell (index.html, icons ...): replaced on every release
+const A="letter-fun-audio-2";        // recorded clips: kept across releases (bump only when clips change), filled lazily
 const L="abcdefghijklmnopqrstuvwxyz".split("");
 const VOICE_DIRS=["voices/dad/"];   // safety net only: the page sends the full list (every voice, the selected one first)
-const PHRASE_FILES=["find","draw","draw_upper","draw_lower","yes","try_again","yes_great_job","keep_going","oops","all_green","speed_slow","speed_normal","speed_fast"];
+const PHRASE_FILES=["find","draw","draw_upper","draw_lower","yes","try_again","yes_great_job","keep_going","oops","all_green","speed_slow","speed_normal","speed_fast","nope_a","nope_an"];
 const CORE=["./","index.html","manifest.json","icon-192.png","icon-512.png","icon-180.png"];
-const JOINED=["find","draw_upper","draw_lower"];
+const JOINED=["find","draw_upper","draw_lower","nope_a","nope_an"];
 const MEDIA=L.map(l=>"sounds/"+l+".mp3").concat(...VOICE_DIRS.map(d=>L.map(l=>d+"names/"+l+".mp3").concat(L.map(l=>d+"sounds/"+l+".mp3"),PHRASE_FILES.map(p=>d+"phrases/"+p+".mp3"),...JOINED.map(p=>L.map(l=>d+"prompts/"+p+"_"+l+".mp3")))));
 const fresh=f=>new Request(f,{cache:"reload"});
 // v17: install caches ONLY the small app shell, so a new version is ready in a second or two. (v16 downloaded ~175

@@ -241,7 +241,7 @@ function playSound(l){
 // then add one entry here. (The service worker also caches every voice listed here for offline use.)
 // lacks: phrases this voice didn't record; the Computer says those (never another grown-up's voice).
 const VOICES=[
-  {id:"dad", label:"Dad", dir:"voices/dad/", joined:true}, // joined: has prompts/<phrase>_<letter>.mp3
+  {id:"dad", label:"Dad", dir:"voices/dad/", joined:true, lacks:[]}, // joined: has prompts/<phrase>_<letter>.mp3
   {id:"mom", label:"Mom", dir:"voices/mom/", joined:true, lacks:["speed_slow","speed_normal","speed_fast"]},
   {id:"computer", label:"Computer", dir:null},
 ];
@@ -251,19 +251,24 @@ let voiceWho=VOICES.some(v=>v.id===lsGet(WHO_KEY,""))?lsGet(WHO_KEY,""):VOICES[0
 function curVoice(){ return VOICES.find(v=>v.id===voiceWho)||VOICES[0]; }
 // what each phrase says (the Computer speaks this text; a recorded voice plays phrases/<key>.mp3)
 const PHRASES={find:"Find the letter", draw:"Draw the letter", draw_upper:"Draw the letter", draw_lower:"Draw the lowercase letter",
-  yes:"Yes!", try_again:"Try again.", yes_great_job:"Yes! Great job!", keep_going:"Keep going!", oops:"Oops! Let's try again.",
-  all_green:"Great job! You got them all!", speed_slow:"This is slow.", speed_normal:"This is normal.", speed_fast:"This is fast."};
+  yes:"Yes!", try_again:"Try again!", yes_great_job:"Yes! Great job!", keep_going:"Keep going!", oops:"Oops! Let's try again.",
+  all_green:"Great job! You got them all!", speed_slow:"This is slow.", speed_normal:"This is normal.", speed_fast:"This is fast.",
+  nope_a:"Nope, that's a", nope_an:"Nope, that's an"};
+// letter NAMES that start with a vowel sound → "an" (an A, an F/"eff", an H/"aitch"…); consonant-sound names → "a"
+const AN_NAME="aefhilmnorsx";
+function nopeArt(l){ return AN_NAME.includes((l||"").toLowerCase())?"nope_an":"nope_a"; }
 // an utterance is a list of parts: {p:"find"} phrase, {n:"b"} letter name, {s:"b"} letter sound
 function partsText(parts){ return parts.filter(x=>!x.s).map(x=>x.p?PHRASES[x.p]:x.n.toUpperCase()+".").join(" "); }
 function clipUrl(v,x){ return x.j?x.j:v.dir+(x.p?"phrases/"+x.p:x.n?"names/"+x.n:"sounds/"+x.s)+".mp3"; }
 // v15: "Find the letter" / "Draw the letter" / "Draw the lowercase letter" + the name are also recorded as ONE clip each
 // (joined with no gap), so the name follows instantly on every device: no second file to load between the two parts.
-const JOINED=["find","draw_upper","draw_lower"];
+const JOINED=["find","draw_upper","draw_lower","nope_a","nope_an"]; // v20: wrong-tap prefix + letter name
 function joinParts(v,parts){ // [{p:"find"},{n:"b"},...] -> [{j:"voices/dad/prompts/find_b.mp3",alt:[{p:"find"},{n:"b"}]},...]
   if(!v.dir||!v.joined||parts.length<2||!JOINED.includes(parts[0].p)||!parts[1].n) return parts;
+  if(lacks(v,parts[0])) return parts; // don't request a joined clip for a phrase this voice never recorded
   return [{j:v.dir+"prompts/"+parts[0].p+"_"+parts[1].n+".mp3",alt:parts.slice(0,2)}].concat(parts.slice(2)); }
 function voiceFiles(v){ if(!v.dir) return LETTERS.map(l=>"sounds/"+l+".mp3"); const f=[]; for(const l of LETTERS) f.push(v.dir+"names/"+l+".mp3",v.dir+"sounds/"+l+".mp3"); for(const k in PHRASES) if(!lacks(v,{p:k})) f.push(v.dir+"phrases/"+k+".mp3");
-  if(v.joined) for(const k of JOINED) for(const l of LETTERS) f.push(v.dir+"prompts/"+k+"_"+l+".mp3"); return f; }
+  if(v.joined) for(const k of JOINED) if(!lacks(v,{p:k})) for(const l of LETTERS) f.push(v.dir+"prompts/"+k+"_"+l+".mp3"); return f; }
 const vLog=[]; // which files / speech actually played (checked by the tests)
 function logV(x){ vLog.push(x); if(vLog.length>400) vLog.splice(0,200); }
 const vA=(typeof Audio!=="undefined")?safe(()=>new Audio()):null; // ONE element for recorded clips: once a tap has started it, iOS lets it keep playing from timers
@@ -298,7 +303,21 @@ function utter(parts,cb){
   const step=()=>{
     if(gen!==vGen) return;
     let over=false, started=false; const url=clipUrl(v,parts[i]);
-    if(lacks(v,parts[i])){ logV("lack:"+url); const rest=parts.slice(i); stopVoice(); computerSay(rest.map(x=>x.j?x.alt:[x]).flat()); return; } // not recorded -> Computer
+    if(lacks(v,parts[i])){ // this phrase wasn't recorded: Computer says JUST this part, then the rest stay on this voice
+      logV("lack:"+url); const text=PHRASES[parts[i].p]||"";
+      const finishPart=()=>{ if(gen!==vGen||over) return; over=true; clearTimeout(vWatchT); clearTimeout(speechWatchT); speechWatchT=null;
+        i++; if(i<parts.length) vGapT=setTimeout(step,Math.round(CLIP_GAP_MS*spd().wait)); else saidEnd(cb); };
+      if(!text||!synth||typeof SpeechSynthesisUtterance==="undefined"){ finishPart(); return; }
+      try{ if(synth.speaking||synth.pending) synth.cancel(); }catch(e){}
+      try{
+        const u=new SpeechSynthesisUtterance(text); if(voice) u.voice=voice;
+        u.rate=spd().tts; u.pitch=1.3; u.volume=0.9; u.lang="en-US"; spokeOnce=true; lastUtter=u; logV("tts:"+text);
+        u.onend=u.onerror=()=>{ if(lastUtter===u){ lastUtter=null; clearTimeout(speechWatchT); speechWatchT=null; } finishPart(); };
+        u.onstart=()=>saidStart(cb,Math.max(.7,text.split(/\s+/).length*.32)/spd().tts);
+        if(synth.paused) synth.resume(); synth.speak(u);
+        speechWatchT=setTimeout(()=>{ try{ if(lastUtter===u&&(synth.speaking||synth.pending)) synth.cancel(); }catch(e){} lastUtter=null; finishPart(); },Math.round(9000*spd().wait));
+      }catch(e){ finishPart(); }
+      return; }
     const fail=()=>{ if(gen!==vGen||over) return; over=true; logV("fail:"+url);
       if(parts[i].j){ clearTimeout(vWatchT); parts=parts.slice(0,i).concat(parts[i].alt,parts.slice(i+1)); vGapT=setTimeout(step,0); return; } // joined clip missing -> the separate clips (next task: WebKit aborts a play() started inside the error event)
       const rest=parts.slice(i); stopVoice(); computerSay(rest.map(x=>x.j?x.alt:[x]).flat()); };
@@ -450,7 +469,7 @@ document.addEventListener("gesturestart",e=>e.preventDefault());
 let mode="home";
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));}
 function stopAll(){
-  quiet(); clearWait(tNextT); tNextT=null; tBusy=false; tBusyAt=0;
+  quiet(); clearWait(tNextT); tNextT=null; tBusy=false; tBusyAt=0; tAfterRight=false;
   endCelebration(false); resetGreen(); resetRed();
   drawStop();
 }
@@ -467,7 +486,7 @@ onTap(document.getElementById("gear"),()=>{ if(mode==="home") openSettings(); })
 // ---------- test mode ----------
 // endless: shuffled deck of all 26 + problem letters once more; reshuffle when it runs out
 let tCase="upper";
-let tDeck=[], tIdx=0, tGood=0, tBad=0, tAnswer=null, tLast=null, tBusy=false, tBusyAt=0, tNextT=null;
+let tDeck=[], tIdx=0, tGood=0, tBad=0, tAnswer=null, tLast=null, tBusy=false, tBusyAt=0, tNextT=null, tAfterRight=false;
 const choicesEl=document.getElementById("choices"), tGoodEl=document.getElementById("tGood"), tBadEl=document.getElementById("tBad");
 function buildTestDeck(){
   const d=spread(shuffle(LETTERS.concat([...problems])));
@@ -482,11 +501,11 @@ function startTest(c){
   tCase=(c==="lower")?"lower":"upper";
   tGood=0; tBad=0; tLast=null; showCounts();
   tDeck=buildTestDeck(); tIdx=0;
-  show("test"); preloadParts([{p:"yes"},{p:"try_again"}]); askQuestion();
+  show("test"); preloadParts([{p:"yes"},{p:"try_again"},{p:"nope_a"},{p:"nope_an"}]); askQuestion();
 }
 function promptTest(){ if(mode!=="test"||!tAnswer) return; utter([{p:"find"},{n:tAnswer}]); }
 function askQuestion(){
-  tBusy=false; tBusyAt=0;
+  tBusy=false; tBusyAt=0; tAfterRight=false;
   if(tIdx>=tDeck.length){ tDeck=buildTestDeck(); tIdx=0; }
   const ans=tDeck[tIdx]; tAnswer=ans; tLast=ans;
   const upper=tCase==="upper";
@@ -599,15 +618,20 @@ function advance(){
 function choose(b){
   if(mode!=="test"||tBusy||!b.isConnected) return;
   if(b.dataset.l===tAnswer){
-    tBusy=true; tBusyAt=Date.now(); tGood++; showCounts();
+    tBusy=true; tBusyAt=Date.now(); tAfterRight=true; tGood++; showCounts();
     b.classList.add("right");
     const f=document.getElementById("tFlash"); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),350);
     // next question once "Yes!" has been heard (1.3 s minimum as before; capped, so nothing can leave the test stuck "busy")
     clearWait(tNextT); tNextT=afterSaid([{p:"yes"}],Math.round(1300*spd().wait),advance);
   }else{
-    tBad++; showCounts(); // every wrong tap counts
+    // v20: "Nope, that's a/an" + letter name + "Try again!". Prefer joined prompts/nope_*_<letter>.mp3 when the
+    // parents' prefix clips exist; otherwise Computer says the prefix (lacks) and Dad/Mom still say the name + Try again.
+    // Ignore further choice taps until the whole feedback finishes.
+    tBusy=true; tBusyAt=Date.now(); tAfterRight=false; tBad++; showCounts();
     b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); // replay the shake
-    utter([{p:"try_again"}]);
+    const w=b.dataset.l;
+    clearWait(tNextT);
+    tNextT=afterSaid([{p:nopeArt(w)},{n:w},{p:"try_again"}],Math.round(2400*spd().wait),()=>{ tBusy=false; tBusyAt=0; tNextT=null; });
   }
 }
 onTap(document.getElementById("speaker"),e=>{e&&e.stopPropagation&&e.stopPropagation(); promptTest();});
@@ -695,7 +719,7 @@ const SHAPES=(()=>{
     X:[P(0,0,.56,1),P(.56,0,0,1)],
     Y:[P(0,0,.31,.5),P(.62,0,.31,.5),P(.31,.5,.31,1)],
     Z:[P(0,0,.8,0,0,1,.8,1)],
-    a:[bowlL(0),P(.5,.5,.5,1)],
+    a:[A(.25,.75,.25,.25,10,-350),P(.5,.5,.5,1)],                 // v20: ball-and-stick — CCW bowl, then a STRAIGHT stick to the baseline (no curl; Bobby's picture)
     b:[P(0,0,0,1),bowlR(0)],
     c:[A(.24,.75,.24,.25,-45,-315)],
     d:[bowlL(0),P(.5,0,.5,1)],
@@ -711,7 +735,7 @@ const SHAPES=(()=>{
     n:[P(0,.5,0,1),bump(0,.44,.16)],
     o:[A(.26,.75,.26,.25,-90,-450)],
     p:[P(0,.5,0,1.42),bowlR(0)],
-    q:[bowlL(0),J(P(.5,.5,.5,1.3),A(.62,1.3,.12,.12,180,-20))],
+    q:[bowlL(0),J(P(.5,.5,.5,1.32),A(.72,1.32,.22,.2,180,45))],   // v20: descender with a clear rightward preschool curl (Dad's chart hook, bigger)
     r:[P(0,.5,0,1),A(.2,.66,.2,.16,180,305)],
     s:[J(A(.18,.625,.17,.125,-30,-270),A(.18,.875,.18,.125,-90,150))],
     t:[P(.2,.18,.2,1),P(0,.5,.4,.5)],                                  // chart: shorter stick, bar on the midline
@@ -728,11 +752,10 @@ const SHAPES=(()=>{
     "K~":[P(0,0,0,1),P(.52,0,0,.55),P(.18,.42,.54,1)],                 // K whose leg starts on the arm
     "t~":[J(P(.2,.18,.2,.86),A(.36,.86,.16,.14,180,90)),P(0,.5,.4,.5)], // t with a curl at the bottom
     "y~":[P(0,.5,.23,1),J(P(.46,.5,.46,1.25),A(.26,1.25,.2,.17,0,170))], // y with a hooked tail
-    "q~":[bowlL(0),P(.5,.5,.5,1.42)],                                  // q with a straight stick
-    "a~":[bowlL(0),J(P(.5,.5,.5,.92),A(.58,.92,.08,.08,180,90))],      // a with a little tail
+    "a~":[bowlL(0),J(P(.5,.5,.5,.92),A(.58,.92,.08,.08,180,90))],      // Dad's chart: ball-and-stick with a little rightward foot (accepted alt)
   };
 })();
-const ALT={M:["M~"],W:["W~"],G:["G~"],K:["K~"],t:["t~"],y:["y~"],q:["q~"],a:["a~"]}; // accepted alternatives for a requested letter
+const ALT={M:["M~"],W:["W~"],G:["G~"],K:["K~"],t:["t~"],y:["y~"],a:["a~"]}; // accepted alternatives (v20: straight q no longer accepted — the curl is required)
 const SAME_CASE_OK="copsuvwxyz"; // upper/lower have the same shape: either case is fine
 const ALL52=LETTERS.concat(LETTERS.map(l=>l.toUpperCase()));
 function shapeBox(sh){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; for(const s of sh) for(const [x,y] of s){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } return [x0,y0,x1,y1]; }
@@ -1029,7 +1052,7 @@ if(window.ResizeObserver){ const ro=new ResizeObserver(()=>{ clearTimeout(resize
 setInterval(()=>safe(()=>{
   // (v19: above the longest feedback wait - a clip may start up to 2.5 s late, then plays at 0.75x, + 1.5 s cap)
   if(celebrating()&&celebrateAt&&Date.now()-celebrateAt>9000) endCelebration(true);
-  if(mode==="test"&&tBusy&&tBusyAt&&Date.now()-tBusyAt>7000) advance();
+  if(mode==="test"&&tBusy&&tBusyAt&&Date.now()-tBusyAt>9000){ clearWait(tNextT); tNextT=null; if(tAfterRight){ tAfterRight=false; advance(); } else { tBusy=false; tBusyAt=0; } }
   if(mode==="draw"&&dPassed&&dPassedAt&&Date.now()-dPassedAt>8000) nextDraw();
 }),1000);
 // iOS: speech/audio are often wedged after the app is backgrounded (home-screen app resumed later). Reset them.
