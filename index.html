@@ -742,7 +742,7 @@ const SHAPES=(()=>{
     n:[P(0,.5,0,1),bump(0,.44,.16)],
     o:[A(.26,.75,.26,.25,-90,-450)],
     p:[P(0,.5,0,1.42),bowlR(0)],
-    q:[bowlL(0),J(P(.5,.5,.5,1.35),A(.68,1.35,.18,.16,180,-25))], // v21: descender curls up+right like Dad's chart (small fishhook)
+    q:[bowlL(0),J(P(.5,.5,.5,1.20),A(.78,1.20,.28,.22,180,-35))], // v22: chart q — round bowl, straight descender, hook curls up and to the right (open enough to see on a thick practice tile)
     r:[P(0,.5,0,1),A(.2,.66,.2,.16,180,305)],
     s:[J(A(.18,.625,.17,.125,-30,-270),A(.18,.875,.18,.125,-90,150))],
     t:[P(.2,.18,.2,1),P(0,.5,.4,.5)],                                  // chart: shorter stick, bar on the midline
@@ -763,7 +763,7 @@ const SHAPES=(()=>{
   };
 })();
 const ALT={M:["M~"],W:["W~"],G:["G~"],K:["K~"],t:["t~"],y:["y~"],a:["a~"]}; // accepted alternatives (v20: straight q no longer accepted — the curl is required)
-// Paint a letter as a thick manuscript SVG from SHAPES (tiles + practice), so lowercase q shows the chart hook — not Comic Sans's blunt tail.
+// Paint a letter as a thick manuscript SVG from SHAPES. Practice (#letter via next()) and test tiles (askQuestion) both use setLetterGlyph — not the Comic Sans glyph.
 function glyphSvg(ch){
   const sh=SHAPES[ch]||SHAPES[ch.toLowerCase()]; if(!sh) return null;
   const [x0,y0,x1,y1]=shapeBox(sh); const span=Math.max(x1-x0,y1-y0,0.35), sw=span*0.17, pad=sw*0.8;
