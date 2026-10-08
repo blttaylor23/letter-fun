@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Letter Fun</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Letters">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#fff8e7">
+<style>
+  /* iOS safe areas (notch, status bar, home indicator): every screen pads itself by these */
+  :root{--sat:env(safe-area-inset-top,0px);--sar:env(safe-area-inset-right,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px)}
+  html,body{touch-action:manipulation;-webkit-touch-callout:none;margin:0;height:100%;font-family:"Comic Sans MS","Chalkboard SE",Arial,sans-serif;user-select:none;-webkit-user-select:none;background:#fff8e7}
+  #wrap{display:flex;flex-direction:column;height:100%}
+  #top{text-align:center;font-size:22px;color:#777;padding:10px}
+  #letterBox{flex:1;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  #letter{font-size:min(45vh,60vw);line-height:1;font-weight:bold;transition:transform .15s;box-sizing:content-box}
+  #letter.pop{transform:scale(1.15)}
+  #buttons{display:flex;gap:20px;padding:20px;flex:none}
+  #buttons button{font-size:min(60px,11vh);line-height:1}
+  button{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;flex:1;height:15vh;border:none;border-radius:30px;font-size:60px;color:#fff;cursor:pointer}
+  #green{background:linear-gradient(to top,#1e8449 var(--p,0%),#2ecc71 var(--p,0%))}#red{background:linear-gradient(to top,#a93226 var(--p,0%),#e74c3c var(--p,0%))}
+  button:active{transform:scale(.96)}
+  #done{display:none;position:fixed;inset:0;padding:var(--sat) var(--sar) var(--sab) var(--sal);box-sizing:border-box;background:#2ecc71;color:#fff;font-size:12vw;align-items:center;justify-content:center;text-align:center}
+  /* screens */
+  .screen{display:none;position:fixed;inset:0;flex-direction:column;background:#fff8e7;box-sizing:border-box}
+  .screen.on{display:flex}
+  .screen:not(.on){display:none !important}
+  #wrap #top{min-height:64px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:10px 80px}
+  #wrap.screen{position:fixed;padding:var(--sat) var(--sar) var(--sab) var(--sal)}
+  #home{align-items:center;justify-content:center;gap:4vmin;padding:calc(4vmin + var(--sat)) calc(4vmin + var(--sar)) calc(4vmin + var(--sab)) calc(4vmin + var(--sal))}
+  #home h1{margin:0;font-size:min(13vw,12vh);color:#e76f51;text-align:center;line-height:1.1}
+  #home h1 span:nth-child(2){color:#2a9d8f}
+  .homeRow{display:grid;grid-template-columns:repeat(4,1fr);gap:3vmin;width:100%;max-width:1400px}
+  button.big{flex:none;width:min(80vw,440px);height:min(24vh,220px);font-size:min(11vw,9vh,84px);border-radius:40px;box-shadow:0 1vmin 0 rgba(0,0,0,.18);touch-action:manipulation}
+  .homeRow button.big{width:100%;height:min(46vh,300px);font-size:min(3.6vw,7vh,46px);line-height:1.1;padding:0 1vmin;font-family:inherit;font-weight:bold}
+  @media (orientation:portrait){.homeRow{grid-template-columns:1fr 1fr;max-width:720px}.homeRow button.big{height:min(25vh,280px);font-size:min(6.2vw,4.4vh,48px)}}
+  #goPractice{background:#2ecc71}#goUpper{background:#3a86ff}#goLower{background:#8e44ad}#goDraw{background:#e76f51}
+  button#gear{position:absolute;top:calc(12px + var(--sat));right:calc(12px + var(--sar));flex:none;width:58px;height:58px;padding:0;border-radius:50%;font-size:30px;line-height:58px;color:#fff;background:#c9bfae;opacity:.75;touch-action:manipulation}
+  /* settings (problem letters) */
+  #settings{align-items:center;gap:2vmin;padding:calc(3vmin + var(--sat)) calc(3vmin + var(--sar)) calc(3vmin + var(--sab)) calc(3vmin + var(--sal))}
+  #settings h2{margin:0;font-size:min(8vw,6vh,52px);color:#e76f51}
+  #settings .hint{margin:0;font-size:min(4.5vw,3vh,26px);color:#777;text-align:center}
+  #pGrid{flex:1;min-height:0;width:100%;max-width:1200px;display:grid;grid-template-columns:repeat(5,1fr);gap:1.6vmin}
+  @media (orientation:landscape){#pGrid{grid-template-columns:repeat(9,1fr)}}
+  button.pl{flex:none;width:100%;height:100%;min-height:0;padding:0;border-radius:2.5vmin;background:#fff;border:.6vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(7vw,5vh,56px);touch-action:manipulation}
+  @media (orientation:landscape){button.pl{font-size:min(4.5vw,7vh,56px)}}
+  button.pl.on{background:#e76f51;border-color:#b5523a;color:#fff}
+  #pBtns{display:flex;gap:4vmin;flex:none}
+  #pBtns button.big{width:min(40vw,320px);height:min(11vh,110px);font-size:min(6vw,5vh,44px);font-family:inherit;font-weight:bold}
+  #pClear{background:#999}#pDone{background:#2ecc71}
+  #cRow{display:flex;align-items:center;gap:1.6vmin;flex:none;flex-wrap:wrap;justify-content:center}
+  #cRow span{font-size:min(4.8vw,3.4vh,28px);color:#555;font-weight:bold}
+  #opts{display:flex;flex-direction:column;align-items:center;gap:1.4vmin;flex:none}
+  @media (orientation:landscape){#opts{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:1.4vmin 5vmin}}
+  #wRow{display:flex;align-items:center;gap:1.6vmin;flex:none;justify-content:center}
+  #wRow span{font-size:min(4.8vw,3.4vh,28px);color:#555;font-weight:bold}
+  #vRow{display:flex;align-items:center;gap:1.6vmin;flex:none;flex-wrap:wrap;justify-content:center}
+  #vRow span{font-size:min(4.8vw,3.4vh,28px);color:#555;font-weight:bold}
+  @media (max-width:500px){#cRow span,#vRow span{flex-basis:100%;text-align:center}}
+  button.vs{flex:none;width:auto;height:max(36px,min(11vw,7vh,56px));padding:0 min(2.6vw,18px);border-radius:2vmin;background:#fff;border:.5vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(5vw,3.6vh,28px);touch-action:manipulation;white-space:nowrap}
+  button.vs.on{background:#8e44ad;border-color:#6c3483;color:#fff}
+  button.cn{flex:none;width:max(44px,min(15vw,9vh,76px));height:max(36px,min(11vw,7vh,56px));padding:0;border-radius:2vmin;background:#fff;border:.5vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(6vw,4vh,32px);touch-action:manipulation}
+  button.cn.on{background:#3a86ff;border-color:#2a64c0;color:#fff}
+  /* draw mode */
+  #draw{padding:calc(10px + var(--sat)) calc(12px + var(--sar)) calc(12px + var(--sab)) calc(12px + var(--sal))}
+  #dTop{display:flex;align-items:center;justify-content:center;gap:12px;min-height:64px;padding:0 8px 0 80px;box-sizing:border-box;flex:none;flex-wrap:nowrap;min-width:0}
+  button.pill{flex:none;white-space:nowrap;height:52px;padding:0 min(18px,3.2vw);border-radius:26px;font-size:min(5vw,26px);font-family:inherit;font-weight:bold;background:#3a86ff;touch-action:manipulation}
+  #dOutline{background:#2a9d8f}#dOutline.off{background:#999}
+  #dStage{flex:1;min-height:0;position:relative;margin:8px 0 10px;background:#fff;border-radius:4vmin;border:.8vmin solid #e0d6c2;overflow:hidden;touch-action:none}
+  #dStage canvas{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none}
+  #dStage #dDemo{pointer-events:none}
+  #dYay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:min(40vw,40vh);pointer-events:none;opacity:0;transform:scale(.4);transition:opacity .2s,transform .35s;background:rgba(46,204,113,.18)}
+  #dYay.on{opacity:1;transform:scale(1)}
+  #dBtns{display:flex;gap:2.5vmin;flex:none}
+  #dBtns button{height:min(12vh,110px);font-size:min(4.6vw,6vh,46px);border-radius:30px;touch-action:manipulation;font-family:inherit;font-weight:bold;white-space:nowrap;padding:0 .3em;min-width:0;flex:1 1 auto}
+  #dClear{background:#f4a261}#dSay{background:#8e44ad;min-width:2em}#dShow{background:#2a9d8f}#dDone{background:#2ecc71}#dSkip{background:#3a86ff;min-width:2em}
+  @media (max-width:600px){#dBtns .w{display:none}}
+  button.big .ico{display:block;font-size:.8em;line-height:1}
+  .homeRow button.big .ico{font-size:1.5em;margin-bottom:.1em}
+  button.homeBtn{position:absolute;top:calc(10px + var(--sat));left:calc(10px + var(--sal));flex:none;width:64px;height:64px;border-radius:20px;font-size:36px;background:#f4a261;color:#fff;z-index:5;touch-action:manipulation;padding:0;line-height:64px}
+  /* test mode */
+  #test{padding:calc(10px + var(--sat)) calc(12px + var(--sar)) calc(14px + var(--sab)) calc(12px + var(--sal))}
+  #tTop{display:flex;align-items:center;justify-content:space-between;min-height:64px;padding:0 6px 0 84px;box-sizing:border-box;flex:none;gap:12px}
+  .count{font-size:min(13vw,9vh,88px);font-weight:bold;line-height:1;font-variant-numeric:tabular-nums;min-width:1.2em}
+  #tGood{color:#27ae60;text-align:left}
+  /* v23: the high score (best streak) sits where the wrong counter used to be */
+  #tBest{color:#d68c00;text-align:right;white-space:nowrap}
+  #tBest .star{font-size:.72em;margin-right:.06em;vertical-align:.08em}
+  .count.pop{animation:hsPop .55s}
+  @keyframes hsPop{0%{transform:scale(1)}40%{transform:scale(1.3)}100%{transform:scale(1)}}
+  /* wide screens: the replay button sits between the counters, leaving more room for the letters */
+  @media (min-aspect-ratio:13/10){#tPrompt{position:absolute;top:calc(8px + var(--sat));left:50%;transform:translateX(-50%);padding:0;z-index:4}
+    #test #tPrompt button#speaker{height:56px;width:min(24vw,190px);font-size:34px}.count{font-size:min(9vw,13vh,80px)}}
+  #tPrompt{display:flex;align-items:center;justify-content:center;flex:none;padding:1vh 0}
+  button#speaker{flex:none;width:min(40vw,26vh,240px);height:min(20vw,13vh,120px);border-radius:999px;background:#8e44ad;font-size:min(12vw,8vh,72px);box-shadow:0 .8vmin 0 rgba(0,0,0,.18);touch-action:manipulation}
+  #choices{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2vmin;padding:1vmin;box-sizing:border-box}
+  button.choice{flex:none;width:100%;height:100%;min-height:0;min-width:0;background:#fff;border:.8vmin solid #e0d6c2;border-radius:4vmin;font-weight:bold;line-height:.5;touch-action:manipulation;overflow:hidden;font-family:inherit;padding:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap}
+  #choices button.choice{font-size:var(--fs,min(28vw,26vh));padding:var(--pt,0px) 0 var(--pb,0px)}
+  button.choice svg.glyph,#letter svg.glyph{width:82%;height:82%;flex:none;overflow:visible;pointer-events:none;display:block}
+  #letter.ms{font-size:0;line-height:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:0 !important}
+  #letter.ms svg.glyph{width:88%;height:88%}
+  button.choice.right{background:#2ecc71;border-color:#1e8449;color:#fff !important}
+  button.choice.wrong{background:#e74c3c;border-color:#a93226;color:#fff !important;animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4vmin)}40%{transform:translateX(4vmin)}60%{transform:translateX(-3vmin)}80%{transform:translateX(3vmin)}}
+  #tFlash{position:fixed;inset:0;background:#2ecc71;opacity:0;pointer-events:none;transition:opacity .15s}
+  #tFlash.on{opacity:.45}
+  /* ---------- v23 ---------- */
+  button.homeBtn svg{display:block;width:40px;height:40px;margin:auto;pointer-events:none}
+  .homeTwo{display:grid;grid-template-columns:1fr 1fr;gap:5vmin;width:100%;max-width:1100px}
+  .homeTwo button.big{width:100%;height:min(48vh,380px);font-size:min(6.4vw,9vh,80px);line-height:1.1;font-family:inherit;font-weight:bold;padding:0 2vmin}
+  .homeTwo button.big .ico{font-size:1.25em;margin-bottom:.15em}
+  @media (orientation:portrait){.homeTwo{grid-template-columns:1fr;max-width:640px}.homeTwo button.big{height:min(27vh,300px);font-size:min(11vw,6vh,80px)}}
+  #goABC{background:#e76f51}#goNum{background:#3a86ff}
+  .menu{align-items:center;justify-content:center;gap:4vmin;padding:calc(84px + var(--sat)) calc(4vmin + var(--sar)) calc(4vmin + var(--sab)) calc(4vmin + var(--sal))}
+  .menu h1{margin:0;font-size:min(10vw,9vh,84px);text-align:center;line-height:1.1}
+  #abc h1{color:#e76f51}#nums h1{color:#3a86ff}
+  .menuRow{display:flex;flex-wrap:wrap;justify-content:center;gap:3vmin;width:100%;max-width:1300px}
+  .menuRow button.big{width:calc((100% - 6vmin)/3);height:min(30vh,250px);font-size:min(3.8vw,5.6vh,46px);line-height:1.1;padding:0 1vmin;font-family:inherit;font-weight:bold}
+  .menuRow.two button.big{width:calc((100% - 3vmin)/2);height:min(44vh,340px);font-size:min(5vw,7vh,60px)}
+  @media (orientation:portrait){.menuRow button.big{width:calc((100% - 3vmin)/2);height:min(20vh,230px);font-size:min(6.2vw,3.8vh,46px)}
+    .menuRow.two button.big{width:100%;height:min(28vh,300px);font-size:min(10vw,5.5vh,64px)}}
+  .menuRow button.big .ico{font-size:1.4em;margin-bottom:.1em}
+  #goProblem{background:#d81b60}#goFindNum{background:#2a9d8f}#goFingers{background:#f4a261}
+  /* Count the Fingers: two hands above the 1-10 buttons */
+  #hands{display:none;flex:1.15 1 0;min-height:0;align-items:center;justify-content:center;padding:0 1vmin}
+  #test[data-game=fingers] #hands{display:flex}
+  #hands svg{width:100%;height:100%;max-width:900px;display:block}
+  @media (orientation:landscape){#test[data-game=fingers] #hands{flex-grow:1.5}}
+  button.choice svg.glyph.fr{width:94%;height:94%}
+  /* Problem Letters picker (grown-ups pick 4) */
+  #pick{align-items:center;gap:1.6vmin;padding:calc(10px + var(--sat)) calc(12px + var(--sar)) calc(12px + var(--sab)) calc(12px + var(--sal))}
+  #pkHead{min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 76px;flex:none;box-sizing:border-box;width:100%}
+  #pkHead h2{margin:0;font-size:min(8vw,5vh,48px);color:#d81b60;line-height:1.1;text-align:center}
+  #pkHead .hint{margin:0;font-size:min(4.2vw,2.5vh,24px);color:#777;text-align:center}
+  #pkSlots{display:flex;gap:2vmin;flex:none}
+  button.slot{flex:none;width:min(18vw,10vh,96px);height:min(18vw,10vh,96px);border-radius:2.5vmin;background:#fff;border:.6vmin dashed #d0c4ae;padding:0;display:flex;align-items:center;justify-content:center;color:#d81b60;touch-action:manipulation}
+  button.slot.full{border-style:solid;border-color:#d81b60}
+  button.slot svg.glyph{width:76%;height:76%;pointer-events:none}
+  #pkSlots.shake{animation:shake .4s}
+  #pkGrids{flex:1;min-height:0;width:100%;max-width:1300px;display:flex;flex-direction:column;gap:1.6vmin}
+  .pkGrid{flex:1 1 0;min-height:0;display:grid;gap:1.2vmin}
+  button.pk{flex:none;width:100%;height:100%;min-height:0;min-width:0;padding:0;border-radius:2vmin;background:#fff;border:.5vmin solid #e0d6c2;color:#444;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+  button.pk svg.glyph{width:80%;height:80%;pointer-events:none}
+  button.pk.on{background:#d81b60;border-color:#a0144a;color:#fff}
+  #pkBtns{display:flex;gap:4vmin;flex:none}
+  #pkBtns button.big{width:min(40vw,320px);height:min(10vh,100px);font-size:min(6vw,4.5vh,44px);font-family:inherit;font-weight:bold}
+  #pkClear{background:#999}#pkStart{background:#2ecc71}#pkStart.off{background:#bbb}
+  /* settings: 3 buttons; high scores screen */
+  #pBtns button.big{width:min(29vw,300px)}
+  #pScores{background:#d68c00}
+  #scores{align-items:center;gap:1.8vmin;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(3vmin + var(--sat)) calc(3vmin + var(--sar)) calc(3vmin + var(--sab)) calc(3vmin + var(--sal))}
+  #scores h2{margin:0;font-size:min(8vw,6vh,52px);color:#d68c00;flex:none}
+  #scores h3{margin:1vmin 0 0;font-size:min(6vw,4vh,36px);color:#d81b60;flex:none}
+  .hsRow{display:flex;align-items:center;gap:2vmin;width:min(94vw,680px);background:#fff;border:.4vmin solid #e0d6c2;border-radius:2vmin;padding:1vmin 2vmin;box-sizing:border-box;flex:none}
+  .hsRow .lbl{font-size:min(4.8vw,3vh,28px);color:#444;font-weight:bold;flex:1;min-width:0}
+  .hsRow .val{font-size:min(5.4vw,3.4vh,32px);color:#d68c00;font-weight:bold;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .hsRow .plv{display:flex;gap:1vmin;color:#d81b60}
+  .hsRow .plv svg.glyph{width:min(9vw,5vh,44px);height:min(9vw,5vh,44px)}
+  button.rs{flex:none;width:auto;height:max(44px,min(10vw,6vh,56px));padding:0 min(3vw,20px);border-radius:2vmin;background:#e76f51;font-family:inherit;font-weight:bold;font-size:min(4.6vw,3vh,26px);touch-action:manipulation;white-space:nowrap}
+  button.rs.sure{background:#c0392b}
+  button.rs.off{background:#ccc}
+  #hsAll{height:max(48px,min(11vw,7vh,64px));padding:0 min(4vw,28px)}
+  /* players */
+  #who{align-items:center;justify-content:center;gap:4vmin;padding:calc(4vmin + var(--sat)) calc(4vmin + var(--sar)) calc(4vmin + var(--sab)) calc(4vmin + var(--sal))}
+  #who h1{margin:0;font-size:min(11vw,10vh,96px);color:#2a9d8f;text-align:center;line-height:1.1}
+  #whoList{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(80vw,300px),1fr));gap:4vmin;width:100%;max-width:1100px}
+  #whoList button.big{width:100%;height:min(36vh,300px);font-size:min(8vw,8vh,72px);line-height:1.1;font-family:inherit;font-weight:bold;padding:0 2vmin}
+  #whoList button.big .ico{display:block;font-size:1.1em;margin-bottom:.1em}
+  @media (orientation:portrait){#whoList button.big{height:min(24vh,260px)}}
+  #whoList.many button.big{height:min(17vh,150px);font-size:min(6vw,5vh,52px)}#whoList.many button.big .ico{display:none}
+  button#switchP{position:absolute;top:calc(12px + var(--sat));left:calc(12px + var(--sal));flex:none;height:58px;width:auto;max-width:calc(100vw - 110px);padding:0 16px 0 10px;border-radius:29px;background:#2a9d8f;display:flex;align-items:center;gap:8px;font-family:inherit;touch-action:manipulation;text-align:left}
+  button#switchP .ico{font-size:28px;display:inline}
+  button#switchP b{display:block;font-size:20px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  button#switchP small{display:block;font-size:14px;line-height:1.1;opacity:.9;white-space:nowrap}
+  #pBtns2{display:flex;gap:2.4vmin;flex:none;flex-wrap:wrap;justify-content:center}
+  #pPlayers{background:#2a9d8f}#pStats{background:#3a86ff}#pProgress{background:#8e44ad}
+  #players,#stats,#progress{align-items:center;gap:1.8vmin;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(3vmin + var(--sat)) calc(3vmin + var(--sar)) calc(3vmin + var(--sab)) calc(3vmin + var(--sal))}
+  #players h2,#stats h2,#progress h2{margin:0;font-size:min(8vw,6vh,52px);color:#2a9d8f;flex:none;text-align:center}
+  #progress h2{color:#8e44ad}
+  #players .hint,#stats .hint,#progress .hint{margin:0;font-size:min(4.2vw,2.6vh,22px);color:#777;text-align:center;flex:none}
+  #plList{display:flex;flex-direction:column;gap:1.4vmin;flex:none}
+  input.plIn,#plNew{flex:1;min-width:0;font-size:max(16px,min(4.8vw,3vh,28px));font-family:inherit;padding:.4em .5em;border:.4vmin solid #e0d6c2;border-radius:1.5vmin;-webkit-user-select:text;user-select:text;background:#fffdf7;color:#333}
+  button.rs.ok{background:#2ecc71}button.rs.ren{background:#3a86ff}
+  #plDone,#stDone,#pgDone{flex:none;width:min(60vw,320px);height:min(10vh,96px);min-height:56px;font-size:min(6vw,4.5vh,44px);font-family:inherit;font-weight:bold;background:#2ecc71}
+  #stList,#pgList{display:flex;flex-direction:column;gap:2vmin;flex:none;width:min(94vw,760px)}
+  .stCard{background:#fff;border:.4vmin solid #e0d6c2;border-radius:2vmin;padding:1.4vmin 2vmin}
+  .stHead{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4em 1.2em;font-size:min(4.6vw,3vh,26px);color:#555}
+  .stHead b{font-size:1.25em;flex:1 1 100%}.stHead em{font-style:normal;font-weight:bold;color:#27ae60}
+  .stCard table{width:100%;border-collapse:collapse;margin-top:.6vmin;font-size:min(4vw,2.5vh,22px);color:#444}
+  .stCard td{padding:.2em .3em;border-top:1px solid #f0e8d8;vertical-align:middle}#stList td:nth-child(2){text-align:right;white-space:nowrap}#stList td:nth-child(3){text-align:right;width:4.5em;color:#d68c00;white-space:nowrap}
+  #pgWho{display:flex;gap:1.6vmin;flex-wrap:wrap;justify-content:center;flex:none}
+  .pgG svg.glyph{width:1.9em;height:1.9em;display:inline-block;vertical-align:middle;color:#d81b60}.pgC .pgG svg.glyph{width:1.4em;height:1.4em}
+  .pgN{font-weight:bold;font-size:1.3em;color:#d81b60}.pgC .pgN{font-size:1.05em}
+  .pgR{color:#27ae60;white-space:nowrap}.pgW{color:#e74c3c;white-space:nowrap}.pgP{white-space:nowrap;font-weight:bold}.pgC{color:#777;font-size:.9em}
+  #pgUse{background:#d81b60;white-space:normal;height:auto;min-height:48px;padding:.3em .8em;max-width:min(94vw,760px)}#pgReset{background:#999}
+  #whoAdd{background:#2a9d8f;flex:none}#whoForm{display:none}#whoForm.on{display:flex}
+  #keypad{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);align-items:center;justify-content:center}#keypad.on{display:flex}
+  .kpBox{background:#fff8e7;border-radius:4vmin;padding:3vmin;display:flex;flex-direction:column;align-items:center;gap:2vmin;width:min(86vw,420px);box-sizing:border-box}
+  .kpBox p{margin:0;font-size:min(4.6vw,3vh,24px);color:#555;text-align:center}
+  #kpDots{font-size:min(9vw,6vh,44px);letter-spacing:.2em;color:#8e44ad}#kpDots.shake{animation:shake .35s}
+  .kpKeys{display:grid;grid-template-columns:repeat(3,1fr);gap:1.6vmin;width:100%}
+  .kpKeys button{flex:none;width:100%;height:min(14vw,9vh,76px);border-radius:2vmin;background:#3a86ff;font-size:min(8vw,5vh,40px);font-family:inherit;font-weight:bold;touch-action:manipulation}
+  .kpKeys button.kx{background:#999}.kpKeys button.kb{background:#f4a261}
+  #pkModes{display:flex;gap:3vmin;flex:none;width:100%;max-width:900px;justify-content:center}
+  #pkModes button.big{flex:1 1 0;width:auto;height:min(11vh,96px);min-height:60px;padding:0 1.5vmin;font-family:inherit;font-weight:bold;font-size:min(5.4vw,3.6vh,36px);line-height:1.1;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:manipulation}
+  #pkModes small{display:block;font-size:.5em;font-weight:normal;opacity:.95;margin-top:.15em}
+  #pkAuto{background:#8e44ad}#pkOwn{background:#3a86ff}#pkAuto.off{background:#bbb}
+  #scDone{flex:none;width:min(60vw,320px);height:min(10vh,96px);font-size:min(6vw,4.5vh,44px);font-family:inherit;font-weight:bold;background:#2ecc71;margin-top:1vmin}
+  @media (orientation:landscape){#scores{gap:1.1vmin;padding-top:calc(2vmin + var(--sat));padding-bottom:calc(2vmin + var(--sab))}#scores h2{font-size:min(8vw,5vh,52px)}#scores h3{font-size:min(6vw,3.4vh,36px);margin:0}
+    #hsList{gap:1vmin !important}.hsRow{padding:.5vmin 2vmin}button.rs{height:max(40px,min(10vw,5.4vh,56px))}#scDone{height:min(8.5vh,90px);margin-top:.5vmin}}
+</style>
+</head>
+<body>
+<div id="who" class="screen on">
+  <h1>Who's playing?</h1>
+  <div id="whoList"></div>
+  <button id="whoAdd" class="rs">＋ Add player</button>
+  <div id="whoForm" class="hsRow"><input id="whoNew" maxlength="20" placeholder="New player's name" autocomplete="off" autocapitalize="words"><button id="whoOk" class="rs ok">Add</button><button id="whoCancel" class="rs" style="background:#999">✕</button></div>
+</div>
+<div id="keypad"><div class="kpBox"><p>Grown-up code to delete a player</p><div id="kpDots">○○○○</div>
+  <div class="kpKeys"><button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button data-k="x" class="kx">✕</button><button data-k="0">0</button><button data-k="b" class="kb">⌫</button></div></div></div>
+<div id="home" class="screen">
+  <button id="switchP" aria-label="Switch player"><span class="ico">👤</span><span><b id="pName"></b><small>Switch player</small></span></button>
+  <button id="gear" aria-label="Settings">⚙️</button>
+  <h1><span>Letter</span> <span>Fun</span></h1>
+  <div class="homeTwo">
+    <button id="goABC" class="big"><span class="ico">🔤</span>ABC's</button>
+    <button id="goNum" class="big"><span class="ico">🔢</span>Numbers 123</button>
+  </div>
+</div>
+<div id="abc" class="screen menu">
+  <button class="homeBtn" aria-label="Home">🏠</button>
+  <h1>ABC's</h1>
+  <div class="menuRow">
+    <button id="goPractice" class="big"><span class="ico">🔤</span>Practice</button>
+    <button id="goUpper" class="big"><span class="ico">ABC</span>Uppercase Test</button>
+    <button id="goLower" class="big"><span class="ico">abc</span>Lowercase Test</button>
+    <button id="goDraw" class="big"><span class="ico">✏️</span>Draw</button>
+    <button id="goProblem" class="big"><span class="ico">🎯</span>Problem Letters</button>
+  </div>
+</div>
+<div id="nums" class="screen menu">
+  <button class="homeBtn" aria-label="Home">🏠</button>
+  <h1>Numbers 123</h1>
+  <div class="menuRow two">
+    <button id="goFindNum" class="big"><span class="ico">7️⃣</span>Find the Number</button>
+    <button id="goFingers" class="big"><span class="ico">🖐️</span>Count the Fingers</button>
+  </div>
+</div>
+<div id="pick" class="screen">
+  <button class="homeBtn" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div id="pkHead"><h2>Problem Letters</h2><p class="hint">Grown-ups: pick 4 letters, then Start</p></div>
+  <div id="pkModes"><button id="pkAuto" class="big"><span>✨ Auto: 4 worst</span><small id="pkAutoNote"></small></button><button id="pkOwn" class="big"><span>✋ Pick my own</span><small>tap letters below</small></button></div>
+  <div id="pkSlots"><button class="slot" data-i="0"></button><button class="slot" data-i="1"></button><button class="slot" data-i="2"></button><button class="slot" data-i="3"></button></div>
+  <div id="pkGrids"><div id="pkU" class="pkGrid"></div><div id="pkL" class="pkGrid"></div></div>
+  <div id="pkBtns"><button id="pkClear" class="big">Clear</button><button id="pkStart" class="big off">Start ▶</button></div>
+</div>
+<div id="scores" class="screen scroll">
+  <h2>⭐ High scores: <span id="scName"></span></h2>
+  <div id="hsList"></div>
+  <button id="hsAll" class="rs">Reset all of <span class="nm"></span>'s high scores</button>
+  <button id="hsEvery" class="rs">Reset high scores for every player</button>
+  <h3>Problem Letters: <span class="nm"></span></h3>
+  <div class="hsRow"><span class="lbl plv" id="plSaved"></span><button id="plClear" class="rs">Clear</button></div>
+  <button id="scDone" class="big">Done</button>
+</div>
+<div id="players" class="screen scroll">
+  <h2>👤 Players</h2>
+  <p class="hint">Each player has their own high scores, Problem Letters, progress and play time, saved on this device only</p>
+  <div id="plList"></div>
+  <div class="hsRow"><input id="plNew" maxlength="20" placeholder="New player's name" autocomplete="off" autocapitalize="words"><button id="plAdd" class="rs ok">Add</button></div>
+  <button id="plDone" class="big">Done</button>
+</div>
+<div id="stats" class="screen scroll">
+  <h2>📊 Stats</h2>
+  <p class="hint">Play time counts while a game or menu is on screen (paused when the app is hidden or nobody has touched it for 2 minutes). Saved on this device only.</p>
+  <div id="stList"></div>
+  <button id="stProg" class="rs" style="background:#8e44ad">📈 Progress: worst letters and numbers</button>
+  <button id="stDone" class="big">Done</button>
+</div>
+<div id="progress" class="screen scroll">
+  <h2>📈 Progress: <span id="pgName"></span></h2>
+  <div id="pgWho"></div>
+  <p class="hint">Worst first: most often missed (ranked after 3+ tries). Letters count separately by case.</p>
+  <div id="pgList"></div>
+  <button id="pgUse" class="rs">Use these as Problem Letters</button>
+  <button id="pgReset" class="rs">Reset this player's progress</button>
+  <button id="pgDone" class="big">Done</button>
+</div>
+<div id="settings" class="screen">
+  <h2>Extra practice letters</h2>
+  <p class="hint">Tap letters to see them more often in Practice, Tests and Draw</p>
+  <div id="pGrid"></div>
+  <div id="opts">
+    <div id="cRow"><span>Choices in tests:</span><button class="cn" data-n="2">2</button><button class="cn" data-n="4">4</button><button class="cn" data-n="6">6</button><button class="cn" data-n="8">8</button><button class="cn" data-n="10">10</button></div>
+    <div id="wRow"><span>Voice:</span></div>
+    <div id="vRow"><span>Voice speed:</span><button class="vs" data-v="slow">🐢 Slow</button><button class="vs" data-v="normal">Normal</button><button class="vs" data-v="fast">🐇 Fast</button></div>
+  </div>
+  <div id="pBtns2"><button id="pPlayers" class="rs">👤 Players</button><button id="pStats" class="rs">📊 Stats</button><button id="pProgress" class="rs">📈 Progress</button></div>
+  <div id="pBtns">
+    <button id="pClear" class="big">Clear all</button>
+    <button id="pScores" class="big">⭐ Scores</button>
+    <button id="pDone" class="big">Done</button>
+  </div>
+</div>
+<div id="draw" class="screen">
+  <button class="homeBtn" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div id="dTop">
+    <button id="dCase" class="pill">ABC</button>
+    <button id="dOutline" class="pill">Outline ON</button>
+  </div>
+  <div id="dStage"><canvas id="dGuide"></canvas><canvas id="dInk"></canvas><canvas id="dDemo"></canvas><div id="dYay">🌟</div></div>
+  <div id="dBtns">
+    <button id="dClear">Clear</button>
+    <button id="dSay" aria-label="Hear it again">🔊</button>
+    <button id="dShow" aria-label="Show me">✍️<span class="w"> Show me</span></button>
+    <button id="dDone"><span class="w">Done </span>✔</button>
+    <button id="dSkip" aria-label="Skip">➡</button>
+  </div>
+</div>
+<div id="wrap" class="screen">
+  <button class="homeBtn" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div id="top"></div>
+  <div id="letterBox"><div id="letter"></div></div>
+  <div id="buttons">
+    <button id="red">✗</button>
+    <button id="green">✓</button>
+  </div>
+</div>
+<div id="test" class="screen">
+  <button class="homeBtn" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div id="tTop"><span id="tGood" class="count" aria-label="Streak">0</span><span id="tBest" class="count" aria-label="High score"><span class="star">⭐</span><span id="tBestN">0</span></span></div>
+  <div id="tPrompt"><button id="speaker" aria-label="Hear it again">🔊</button></div>
+  <div id="hands"></div>
+  <div id="choices"></div>
+  <div id="tFlash"></div>
+</div>
+<div id="done">🎉 All green! 🎉</div>
+<script>
+// letter name (speech), then its phonics sound (recorded clip in sounds/)
+const LETTERS="abcdefghijklmnopqrstuvwxyz".split("");
+// v23: the beta lives in /beta/ and shares the live app's clips (../sounds, ../voices); the same file works at the root
+const ROOT=/\/beta\//.test(location.pathname)?"../":"";
+function safe(fn,...a){ try{ return fn(...a); }catch(e){ try{console.error(e);}catch(_){} } }
+function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v); }catch(e){ return d; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+// ---------- v23: players (kept on this device only, in localStorage; no cloud sync) ----------
+// lf-players [{id,name}], lf-player = who is playing. Per player: lf-best:<id>, lf-problem4:<id>, lf-time:<id>.
+const PLAYERS_KEY="lf-players", CUR_KEY="lf-player";
+function loadPlayers(){ const a=lsGet(PLAYERS_KEY,null);
+  if(Array.isArray(a)){ const ok=a.filter((p,i)=>p&&typeof p.id==="string"&&typeof p.name==="string"&&p.name.trim()&&a.findIndex(q=>q&&q.id===p.id)===i); if(ok.length) return ok; }
+  const d=[{id:"p1",name:"Blakeli"},{id:"p2",name:"Little Bobby"}]; lsSet(PLAYERS_KEY,d); return d; }
+// Blakeli (p1) and Little Bobby (p2) are permanent: they can be renamed but never deleted
+function permanent(id){ return id==="p1"||id==="p2"; }
+let players=loadPlayers();
+let curPlayer=players.some(p=>p.id===lsGet(CUR_KEY,""))?lsGet(CUR_KEY,""):players[0].id;
+function playerName(id){ const p=players.find(p=>p.id===(id||curPlayer)); return p?p.name:""; }
+function pkey(k,id){ return k+":"+(id||curPlayer); }
+// "problem letters" (lowercase keys), chosen by a grown-up in the hidden settings screen
+const PROB_KEY="lf-problem";
+let problems=new Set((Array.isArray(lsGet(PROB_KEY,[]))?lsGet(PROB_KEY,[]):[]).filter(l=>LETTERS.includes(l)));
+function saveProblems(){ lsSet(PROB_KEY,[...problems].sort()); }
+// voice speed: speech rate + recorded clip playback rate (pitch preserved)
+const VOICE_KEY="lf-voice", SPEEDS={slow:{tts:0.5,clip:0.75,wait:1.4},normal:{tts:0.75,clip:1.0,wait:1},fast:{tts:1.0,clip:1.15,wait:0.9}};
+let voiceSpeed=SPEEDS[lsGet(VOICE_KEY,"normal")]?lsGet(VOICE_KEY,"normal"):"normal";
+function spd(){ return SPEEDS[voiceSpeed]||SPEEDS.normal; }
+// number of answer choices in the tests (2 / 4 / 6 / 8 / 10; 2 for beginners)
+const CHOICES_KEY="lf-choices", CHOICE_OPTS=[2,4,6,8,10];
+let nChoices=CHOICE_OPTS.includes(lsGet(CHOICES_KEY,4))?lsGet(CHOICES_KEY,4):4;
+
+// ---------- speech (iOS Safari-hardened; the game never waits on it) ----------
+const synth=("speechSynthesis" in window && window.speechSynthesis) ? window.speechSynthesis : null;
+let voice=null, speakT=null, speechWatchT=null, lastUtter=null, cancelAt=0, spokeOnce=false;
+function pickVoice(){
+  if(!synth) return;
+  const vs=(synth.getVoices()||[]).filter(v=>/^en/i.test(v.lang));
+  const prefs=["Samantha","Ava","Allison","Susan","Zoe","Nicky","Aria","Jenny","Michelle","Google US English","Karen","Moira","Tessa","Serena","Victoria","Zira","female"];
+  for(const n of prefs){const v=vs.find(v=>v.name.toLowerCase().includes(n.toLowerCase()));if(v){voice=v;return;}}
+  voice=vs[0]||null;
+}
+safe(pickVoice); if(synth) safe(()=>{ synth.onvoiceschanged=()=>safe(pickVoice); });
+// Stop speech. Returns true if something was actually speaking/queued.
+function hush(){
+  clearTimeout(speakT); speakT=null; clearTimeout(speechWatchT); speechWatchT=null;
+  if(!synth) return false;
+  let busy=false;
+  try{ busy=!!(synth.speaking||synth.pending); if(busy){ synth.cancel(); cancelAt=Date.now(); } if(synth.paused) synth.resume(); }catch(e){}
+  return busy;
+}
+function speak(text){
+  const cb=sayCb; // v19: whoever waits for this utterance hears when it ends
+  if(!synth||typeof SpeechSynthesisUtterance==="undefined"){ saidEnd(cb); return; }
+  const justCancelled=hush()||Date.now()-cancelAt<150;
+  const go=()=>{ speakT=null; try{
+    const u=new SpeechSynthesisUtterance(text);
+    if(voice) u.voice=voice;
+    u.rate=spd().tts; u.pitch=1.3; u.volume=0.9; u.lang="en-US";
+    spokeOnce=true; lastUtter=u; logV("tts:"+text); // keep a reference: Safari drops end events for garbage-collected utterances
+    u.onend=u.onerror=()=>{ if(lastUtter===u){ lastUtter=null; clearTimeout(speechWatchT); speechWatchT=null; } saidEnd(cb); };
+    u.onstart=()=>saidStart(cb,0);
+    if(synth.paused) synth.resume(); // iOS can come back from the background "paused"
+    synth.speak(u);
+    // watchdog: our phrases are short; if the engine is still "speaking" long after, it is wedged -> reset it
+    speechWatchT=setTimeout(()=>{ speechWatchT=null; try{ if(lastUtter===u&&(synth.speaking||synth.pending)){ synth.cancel(); } }catch(e){} lastUtter=null; saidEnd(cb); },Math.round(9000*spd().wait));
+  }catch(e){ saidEnd(cb); } };
+  // Safari often swallows an utterance spoken immediately after cancel(); give it a moment.
+  // (Only delay once speech has been unlocked by an earlier direct call; iOS needs the first speak() inside a tap.)
+  if(justCancelled&&spokeOnce) speakT=setTimeout(go,120); else go();
+}
+
+// ---------- phonics clips (created on first use, not 26 up front) ----------
+const CLIPS={}; let clip=null;
+function getClip(l){ if(!CLIPS[l]){ const a=new Audio(ROOT+"sounds/"+l+".mp3"); a.preload="auto"; CLIPS[l]=a; } return CLIPS[l]; }
+function stopClip(){ if(clip){ try{clip.pause(); clip.currentTime=0;}catch(e){} clip=null; } }
+function playSound(l){
+  hush(); stopClip(); const cb=sayCb;
+  try{
+    clip=getClip(l); const me=clip;
+    me.onended=me.onerror=()=>{ if(clip===me) saidEnd(cb); }; me.onplaying=()=>{ if(clip===me) saidStart(cb,me.duration/spd().clip); };
+    try{clip.currentTime=0;}catch(e){}
+    try{ clip.preservesPitch=true; clip.webkitPreservesPitch=true; clip.mozPreservesPitch=true;
+      clip.defaultPlaybackRate=spd().clip; clip.playbackRate=spd().clip; }catch(e){}
+    logV("clip:sounds/"+l+".mp3");
+    const p=clip.play(); if(p&&p.catch) p.catch(err=>{ if(clip===me&&!(err&&err.name==="AbortError")) saidEnd(cb); });
+  }catch(e){ clip=null; saidEnd(cb); }
+}
+
+// ---------- voices: a recorded grown-up (Dad, Mom) or the Computer (speech + sounds/ clips) ----------
+// To add a voice: put its clips in voices/<id>/names/a-z.mp3, sounds/a-z.mp3 and phrases/<key>.mp3 (keys below),
+// then add one entry here. (The service worker also caches every voice listed here for offline use.)
+// lacks: phrases this voice didn't record; the Computer says those (never another grown-up's voice).
+const VOICES=[
+  {id:"dad", label:"Dad", dir:ROOT+"voices/dad/", joined:true, lacks:[]}, // joined: has prompts/<phrase>_<letter>.mp3
+  {id:"mom", label:"Mom", dir:ROOT+"voices/mom/", joined:true, lacks:["speed_slow","speed_normal","speed_fast"]},
+  {id:"computer", label:"Computer", dir:null},
+];
+function lacks(v,x){ return !!(x&&x.p&&v.lacks&&v.lacks.includes(x.p)); }
+const WHO_KEY="lf-voice-who";
+let voiceWho=VOICES.some(v=>v.id===lsGet(WHO_KEY,""))?lsGet(WHO_KEY,""):VOICES[0].id;
+function curVoice(){ return VOICES.find(v=>v.id===voiceWho)||VOICES[0]; }
+// what each phrase says (the Computer speaks this text; a recorded voice plays phrases/<key>.mp3)
+const PHRASES={find:"Find the letter", draw:"Draw the letter", draw_upper:"Draw the letter", draw_lower:"Draw the lowercase letter",
+  yes:"Yes!", try_again:"Try again!", yes_great_job:"Yes! Great job!", keep_going:"Keep going!", oops:"Oops! Let's try again.",
+  all_green:"Great job! You got them all!", speed_slow:"This is slow.", speed_normal:"This is normal.", speed_fast:"This is fast.",
+  nope_a:"Nope, that's a", nope_an:"Nope, that's an",
+  find_number:"Find the number", how_many_fingers:"How many fingers?"}; // v23 (no recordings yet: the Computer says them until clips are added)
+// letter NAMES that start with a vowel sound → "an" (an A, an F/"eff", an H/"aitch"…); consonant-sound names → "a"
+const AN_NAME="aefhilmnorsx";
+function nopeArt(l){ return AN_NAME.includes((l||"").toLowerCase())?"nope_an":"nope_a"; }
+// an utterance is a list of parts: {p:"find"} phrase, {n:"b"} letter name, {s:"b"} letter sound
+// v23: {num:7} a number, voices/<voice>/numbers/7.mp3 (1-20)
+function partsText(parts){ return parts.filter(x=>!x.s).map(x=>x.p?PHRASES[x.p]:x.num!=null?String(x.num)+".":x.n.toUpperCase()+".").join(" "); }
+function clipUrl(v,x){ return x.j?x.j:v.dir+(x.p?"phrases/"+x.p:x.n?"names/"+x.n:x.num!=null?"numbers/"+x.num:"sounds/"+x.s)+".mp3"; }
+// v15: "Find the letter" / "Draw the letter" / "Draw the lowercase letter" + the name are also recorded as ONE clip each
+// (joined with no gap), so the name follows instantly on every device: no second file to load between the two parts.
+const JOINED=["find","draw_upper","draw_lower","nope_a","nope_an"]; // v20: wrong-tap prefix + letter name
+// v23: numbers follow the same pattern: prompts/find_number_7.mp3 (joined), else phrases/find_number.mp3 + numbers/7.mp3
+const JOINED_NUM=["find_number","nope_a","nope_an"], NUMS=Array.from({length:20},(_,i)=>i+1);
+function joinParts(v,parts){ // [{p:"find"},{n:"b"},...] -> [{j:"voices/dad/prompts/find_b.mp3",alt:[{p:"find"},{n:"b"}]},...]
+  if(!v.dir||!v.joined||parts.length<2) return parts;
+  let j=null;
+  if(JOINED.includes(parts[0].p)&&parts[1].n) j=v.dir+"prompts/"+parts[0].p+"_"+parts[1].n+".mp3";
+  else if(JOINED_NUM.includes(parts[0].p)&&parts[1].num!=null) j=v.dir+"prompts/"+parts[0].p+"_"+parts[1].num+".mp3";
+  if(!j) return parts;
+  if(lacks(v,parts[0])) return parts; // don't request a joined clip for a phrase this voice never recorded
+  return [{j,alt:parts.slice(0,2)}].concat(parts.slice(2)); }
+// v23: clips of the NEW kinds (numbers, "Find the number", "How many fingers?") that turned out not to exist (404):
+// the next time they go straight to the fallback (the Computer), with no wait. Dropping the clips in makes them play.
+const missing=new Set(), NEWKIND=/\/(numbers\/\d+|phrases\/(find_number|how_many_fingers)|prompts\/(find_number|nope_an?)_\d+)\.mp3$/;
+function skipMissing(parts){ return parts.map(x=>x.j&&missing.has(x.j)?x.alt:[x]).flat(); }
+function voiceFiles(v){ if(!v.dir) return LETTERS.map(l=>ROOT+"sounds/"+l+".mp3"); const f=[]; for(const l of LETTERS) f.push(v.dir+"names/"+l+".mp3",v.dir+"sounds/"+l+".mp3"); for(const k in PHRASES) if(!lacks(v,{p:k})) f.push(v.dir+"phrases/"+k+".mp3");
+  if(v.joined) for(const k of JOINED) if(!lacks(v,{p:k})) for(const l of LETTERS) f.push(v.dir+"prompts/"+k+"_"+l+".mp3");
+  for(const n of NUMS) f.push(v.dir+"numbers/"+n+".mp3"); if(v.joined&&!lacks(v,{p:"find_number"})) for(const n of NUMS) f.push(v.dir+"prompts/find_number_"+n+".mp3");
+  return f; }
+const vLog=[]; // which files / speech actually played (checked by the tests)
+function logV(x){ vLog.push(x); if(vLog.length>400) vLog.splice(0,200); }
+const vA=(typeof Audio!=="undefined")?safe(()=>new Audio()):null; // ONE element for recorded clips: once a tap has started it, iOS lets it keep playing from timers
+if(vA) vA.preload="auto";
+let vGen=0, vGapT=null, vWatchT=null;
+const CLIP_GAP_MS=10; // pause between clips of one utterance ("Find the letter" + "B"); the clips themselves are trimmed tight
+function vRate(){ try{ vA.preservesPitch=true; vA.webkitPreservesPitch=true; vA.mozPreservesPitch=true; vA.defaultPlaybackRate=spd().clip; vA.playbackRate=spd().clip; }catch(e){} }
+function stopVoice(){
+  vGen++; clearTimeout(vGapT); clearTimeout(vWatchT); vGapT=vWatchT=null;
+  if(vA) try{ vA.onended=vA.onerror=vA.onplaying=null; vA.pause(); }catch(e){}
+}
+// warm the cache for clips we are about to need (a failed fetch just means it loads on demand)
+const warmed=new Set();
+function preloadParts(parts){
+  const v=curVoice();
+  if(!v.dir){ for(const x of parts) if(x.s) safe(getClip,x.s); return; }
+  for(const x of joinParts(v,parts)) preloadOne(v,x);
+}
+function preloadOne(v,x){
+  if(lacks(v,x)) return; const u=clipUrl(v,x);
+  if(missing.has(u)){ if(x.j) for(const y of x.alt) preloadOne(v,y); return; }
+  if(warmed.has(u)) return; warmed.add(u);
+  safe(()=>fetch(u).then(r=>{ if(r.status===404&&NEWKIND.test(u)){ missing.add(u); if(x.j) for(const y of x.alt) preloadOne(v,y); } return r.ok?r.arrayBuffer():Promise.reject(); }).catch(()=>warmed.delete(u)));
+}
+// Computer voice (and the fallback when a recording can't play): speech for words, sounds/ clip for a letter sound
+function computerSay(parts){ const t=partsText(parts), snd=parts.find(x=>x.s); if(t) speak(t); else if(snd) playSound(snd.s); }
+// Say something. Always cancels whatever is playing or queued. Never blocks: game logic runs on its own timers.
+// v19: the listener of the utterance in progress ({start(seconds), end()}); quiet() ends it (interrupted = over)
+let sayCb=null;
+function saidStart(cb,d){ if(cb&&cb===sayCb&&cb.start) safe(()=>cb.start(d)); }
+function saidEnd(cb){ if(cb&&cb===sayCb){ sayCb=null; if(cb.end) safe(()=>cb.end()); } }
+function utter(parts,cb){
+  quiet(); sayCb=cb||null;
+  const v=curVoice();
+  if(!v.dir||!vA){ computerSay(parts); return; }
+  const gen=vGen; let i=0; parts=skipMissing(joinParts(v,parts));
+  // v23: the first clip is known to be missing -> the Computer says it all right now (still inside the tap on iOS)
+  if(!lacks(v,parts[0])&&missing.has(clipUrl(v,parts[0]))){ logV("missing:"+clipUrl(v,parts[0])); computerSay(parts.map(x=>x.j?x.alt:[x]).flat()); return; }
+  const step=()=>{
+    if(gen!==vGen) return;
+    let over=false, started=false; const url=clipUrl(v,parts[i]);
+    if(lacks(v,parts[i])){ // this phrase wasn't recorded: Computer says JUST this part, then the rest stay on this voice
+      logV("lack:"+url); const text=PHRASES[parts[i].p]||"";
+      const finishPart=()=>{ if(gen!==vGen||over) return; over=true; clearTimeout(vWatchT); clearTimeout(speechWatchT); speechWatchT=null;
+        i++; if(i<parts.length) vGapT=setTimeout(step,Math.round(CLIP_GAP_MS*spd().wait)); else saidEnd(cb); };
+      if(!text||!synth||typeof SpeechSynthesisUtterance==="undefined"){ finishPart(); return; }
+      try{ if(synth.speaking||synth.pending) synth.cancel(); }catch(e){}
+      try{
+        const u=new SpeechSynthesisUtterance(text); if(voice) u.voice=voice;
+        u.rate=spd().tts; u.pitch=1.3; u.volume=0.9; u.lang="en-US"; spokeOnce=true; lastUtter=u; logV("tts:"+text);
+        u.onend=u.onerror=()=>{ if(lastUtter===u){ lastUtter=null; clearTimeout(speechWatchT); speechWatchT=null; } finishPart(); };
+        u.onstart=()=>saidStart(cb,Math.max(.7,text.split(/\s+/).length*.32)/spd().tts);
+        if(synth.paused) synth.resume(); synth.speak(u);
+        speechWatchT=setTimeout(()=>{ try{ if(lastUtter===u&&(synth.speaking||synth.pending)) synth.cancel(); }catch(e){} lastUtter=null; finishPart(); },Math.round(9000*spd().wait));
+      }catch(e){ finishPart(); }
+      return; }
+    const fail=()=>{ if(gen!==vGen||over) return; over=true; logV("fail:"+url);
+      try{ if(NEWKIND.test(url)&&vA.error) missing.add(url); }catch(e){}
+      if(parts[i].j){ clearTimeout(vWatchT); parts=parts.slice(0,i).concat(parts[i].alt,parts.slice(i+1)); vGapT=setTimeout(step,0); return; } // joined clip missing -> the separate clips (next task: WebKit aborts a play() started inside the error event)
+      const rest=parts.slice(i); stopVoice(); computerSay(rest.map(x=>x.j?x.alt:[x]).flat()); };
+    const done=()=>{ if(gen!==vGen||over) return; over=true; clearTimeout(vWatchT); i++;
+      if(i<parts.length) vGapT=setTimeout(step,Math.round(CLIP_GAP_MS*spd().wait)); else { vA.onended=vA.onerror=vA.onplaying=null; saidEnd(cb); } };
+    if(missing.has(url)){ fail(); return; }
+    try{
+      vA.onerror=fail; vA.onended=done;
+      vA.onplaying=()=>{ if(gen!==vGen||over||started) return; started=true; clearTimeout(vWatchT);
+        const d=(isFinite(vA.duration)&&vA.duration>0)?vA.duration:3; vWatchT=setTimeout(done,Math.round(d/spd().clip*1000+1500));
+        saidStart(cb,(isFinite(vA.duration)&&vA.duration>0)?vA.duration/spd().clip:0); };
+      vRate(); vA.src=url; vRate(); logV("play:"+url);
+      const pr=vA.play(); if(pr&&pr.catch) pr.catch(err=>{ if(!(err&&err.name==="AbortError")) fail(); });
+      clearTimeout(vWatchT); vWatchT=setTimeout(()=>{ if(!started) fail(); },2500); // not playing yet (slow / offline) -> speak it instead
+    }catch(e){ fail(); }
+  };
+  step();
+}
+function quiet(){ hush(); stopClip(); stopVoice(); saidEnd(sayCb); }
+// v19: move on only once the feedback has been heard: never before minMs (the old fixed delays, so Dad and the
+// Computer feel the same), and not before the clip/speech has ended + 0.3 s. Safety cap so the game never hangs:
+// clip length (at the current speed) + 1.5 s from when it starts playing; 4 s while its length is unknown.
+const AFTER_SAID_MS=300, SAID_CAP_UNKNOWN_MS=4000, SAID_CAP_EXTRA_MS=1500;
+function afterSaid(parts,minMs,fn){
+  let over=false, minOk=false, heard=false, capT=null, tailT=null;
+  const h={cancel(){ over=true; clearTimeout(minT); clearTimeout(capT); clearTimeout(tailT); }};
+  const go=()=>{ if(over||!minOk||!heard) return; h.cancel(); safe(fn); };
+  const minT=setTimeout(()=>{ minOk=true; go(); },minMs);
+  const cap=ms=>{ clearTimeout(capT); capT=setTimeout(()=>{ heard=true; go(); },ms); };
+  cap(SAID_CAP_UNKNOWN_MS);
+  utter(parts,{start(d){ if(d>0&&isFinite(d)) cap(Math.round(d*1000)+SAID_CAP_EXTRA_MS); },
+               end(){ clearTimeout(tailT); tailT=setTimeout(()=>{ heard=true; go(); },AFTER_SAID_MS); }});
+  return h;
+}
+function clearWait(h){ if(h&&h.cancel) h.cancel(); else clearTimeout(h); }
+
+// ---------- reliable taps ----------
+// Act on touchend (a user gesture on iOS, so audio/speech still unlock). iOS suppresses "click" when a second
+// finger/thumb is on the screen and when the finger drifts a bit; kids do both. preventDefault on touchend also
+// stops the delayed native click from landing on the *next* screen (ghost taps). click stays as mouse/keyboard fallback.
+let lastTapT=0;
+function onTap(el,fn){
+  const ids=new Set(); let sc=null, sc0=0; // v23: inside a scrolling screen (.scroll), a finger that scrolled it is not a tap
+  el.addEventListener("touchstart",e=>{ for(const t of e.changedTouches) ids.add(t.identifier); sc=el.closest?el.closest(".scroll"):null; sc0=sc?sc.scrollTop:0; },{passive:true});
+  el.addEventListener("touchcancel",e=>{ for(const t of e.changedTouches) ids.delete(t.identifier); },{passive:true});
+  el.addEventListener("touchend",e=>{
+    for(const t of e.changedTouches){
+      if(!ids.has(t.identifier)) continue; ids.delete(t.identifier);
+      if(sc&&Math.abs(sc.scrollTop-sc0)>6) continue;
+      const r=el.getBoundingClientRect(), m=40;
+      if(r.width&&t.clientX>=r.left-m&&t.clientX<=r.right+m&&t.clientY>=r.top-m&&t.clientY<=r.bottom+m){
+        if(e.cancelable) e.preventDefault();
+        lastTapT=Date.now(); safe(fn,e); return;
+      }
+    }
+  },{passive:false});
+  el.addEventListener("click",e=>{ if(Date.now()-lastTapT<700) return; safe(fn,e); });
+}
+
+const colors=["#e63946","#2a9d8f","#f4a261","#457b9d","#8e44ad","#e76f51","#27ae60","#d81b60"];
+const el=document.getElementById("letter"), top_=document.getElementById("top"), doneEl=document.getElementById("done");
+let taps=0;
+let queue=[], reds=[], current=null, total=0, greens=0;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+// break up identical neighbours (bounded number of passes, never loops forever)
+function spread(a){
+  for(let pass=0;pass<6;pass++){
+    let ok=true;
+    for(let i=1;i<a.length;i++){
+      if(a[i]!==a[i-1]) continue; ok=false;
+      for(let k=0;k<a.length;k++){ const j=Math.floor(Math.random()*a.length); if(a[j]!==a[i]&&a[j-1]!==a[i]&&a[j+1]!==a[i]){ [a[i],a[j]]=[a[j],a[i]]; break; } }
+    }
+    if(ok) break;
+  }
+  return a;
+}
+// every letter in both cases once; problem letters (both cases) 3 times
+function buildDeck(){
+  const d=[];
+  LETTERS.forEach(l=>{ const n=problems.has(l)?3:1; for(let i=0;i<n;i++) d.push(l,l.toUpperCase()); });
+  return spread(shuffle(d));
+}
+function startRound(){
+  queue=buildDeck();
+  reds=[]; total=queue.length; greens=0; next();
+}
+function next(){
+  if(queue.length===0){
+    if(reds.length===0){ celebrate(); return; }
+    queue=shuffle(reds); reds=[];
+  }
+  current=queue.shift(); taps=0;
+  setLetterGlyph(el, current); fitPractice();
+  el.style.color=colors[Math.floor(Math.random()*colors.length)];
+  top_.textContent="Green: "+greens+" of "+total;
+  quiet();
+  const l=current.toLowerCase(), nx=queue[0]&&queue[0].toLowerCase(); preloadParts(nx?[{n:l},{s:l},{n:nx},{s:nx}]:[{n:l},{s:l}]);
+}
+function say(){
+  if(mode!=="practice"||!current||celebrating()) return;
+  const l=current.toLowerCase();
+  taps++;
+  if(taps%2===1) utter([{n:l}]);
+  else utter([{s:l}]);
+  el.classList.add("pop"); setTimeout(()=>el.classList.remove("pop"),150);
+}
+let celebrateT=null, celebrateAt=0;
+function celebrating(){ return doneEl.style.display==="flex"; }
+function endCelebration(restart){
+  clearWait(celebrateT); celebrateT=null; celebrateAt=0;
+  doneEl.style.display="none";
+  if(restart&&mode==="practice") startRound();
+}
+function celebrate(){
+  doneEl.style.display="flex"; celebrateAt=Date.now();
+  // the exit is scheduled together with the speech (4 s minimum, capped), so a speech failure can never leave the overlay up
+  clearWait(celebrateT); celebrateT=afterSaid([{p:"all_green"}],4000,()=>endCelebration(true));
+}
+// tapping the celebration screen (after a moment) skips it, so it can never trap the kids
+onTap(doneEl,()=>{ if(Date.now()-celebrateAt>1200) endCelebration(true); });
+onTap(document.getElementById("letterBox"),say);
+const HOLD_MS=500;
+function holdButton(id,action,guard){
+  guard=guard||(()=>mode==="practice"&&!celebrating());
+  const b=document.getElementById(id); let t=null,start=0,raf=null;
+  const reset=()=>{clearTimeout(t);cancelAnimationFrame(raf);t=null;b.style.setProperty("--p","0%");};
+  const tick=()=>{if(!t)return;const p=Math.min(100,(Date.now()-start)/HOLD_MS*100);b.style.setProperty("--p",p+"%");raf=requestAnimationFrame(tick);};
+  const down=e=>{if(e.cancelable)e.preventDefault();e.stopPropagation();if(t)return;start=Date.now();t=setTimeout(()=>{reset();if(guard())safe(action);},HOLD_MS);tick();};
+  const up=e=>{if(e.cancelable)e.preventDefault();e.stopPropagation();reset();};
+  if("ontouchstart" in window){
+    b.addEventListener("touchstart",down,{passive:false});
+    b.addEventListener("touchend",up,{passive:false});
+    b.addEventListener("touchcancel",up,{passive:false});
+  }else{
+    b.addEventListener("mousedown",down);
+    b.addEventListener("mouseup",up);
+    b.addEventListener("mouseleave",up);
+  }
+  b.addEventListener("contextmenu",e=>e.preventDefault());
+  return reset;
+}
+const resetGreen=holdButton("green",()=>{greens++; next();});
+const resetRed=holdButton("red",()=>{reds.push(current); next();});
+// block double-tap zoom on empty areas (taps on controls are already handled by onTap)
+let lastTouch=0;
+document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<350&&e.cancelable&&!(e.target&&e.target.tagName==="INPUT"))e.preventDefault();lastTouch=n;},{passive:false}); // v23: name boxes always take focus
+document.addEventListener("dblclick",e=>e.preventDefault());
+document.addEventListener("gesturestart",e=>e.preventDefault());
+// ---------- screens / modes ----------
+let mode="home";
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));}
+function stopAll(){
+  quiet(); clearWait(tNextT); tNextT=null; tBusy=false; tBusyAt=0; tAfterRight=false;
+  endCelebration(false); resetGreen(); resetRed();
+  drawStop();
+}
+function goHome(){ stopAll(); mode="home"; show("home"); }
+// v23: home = ABC's / Numbers 123; each section is a menu of its games. A game's back button returns to its menu.
+function goMenu(id){ stopAll(); mode=id; show(id);
+  if(id==="nums") preloadParts([{p:"find_number"},{num:1},{p:"how_many_fingers"},{p:"yes"},{p:"try_again"}]); }
+function goBack(scr){ if(scr==="abc"||scr==="nums") goHome(); else if(scr==="test") goMenu(GAMES[game].menu); else goMenu("abc"); }
+function startPractice(){ stopAll(); mode="practice"; show("wrap"); preloadParts([{p:"all_green"}]); startRound(); }
+onTap(document.getElementById("goABC"),()=>goMenu("abc"));
+onTap(document.getElementById("goNum"),()=>goMenu("nums"));
+onTap(document.getElementById("goPractice"),startPractice);
+onTap(document.getElementById("goUpper"),()=>startTest("upper"));
+onTap(document.getElementById("goLower"),()=>startTest("lower"));
+onTap(document.getElementById("goProblem"),()=>openPicker());
+onTap(document.getElementById("goFindNum"),()=>startGame("num"));
+onTap(document.getElementById("goFingers"),()=>startGame("fingers"));
+document.querySelectorAll(".homeBtn").forEach(b=>onTap(b,e=>{e&&e.stopPropagation&&e.stopPropagation(); const s=b.closest(".screen"); goBack(s?s.id:"");}));
+onTap(document.getElementById("goDraw"),()=>startDraw());
+// gear: a normal tap opens the grown-up settings
+onTap(document.getElementById("gear"),()=>{ if(mode==="home") openSettings(); });
+
+// ---------- quiz games (v23): Uppercase / Lowercase Test, Problem Letters, Find the Number, Count the Fingers ----------
+// All endless. Score: a GREEN streak (right answers in a row; a wrong answer puts it back to 0) and, where the wrong
+// counter used to be, each game's own high score (best streak) with a ⭐, kept in localStorage.
+const GAMES={upper:{label:"Uppercase Test",menu:"abc"}, lower:{label:"Lowercase Test",menu:"abc"}, problem:{label:"Problem Letters",menu:"abc"},
+  num:{label:"Find the Number",menu:"nums"}, fingers:{label:"Count the Fingers",menu:"nums"}};
+// per player: lf-best:<player id>
+function loadBest(id){ const o=lsGet(pkey("lf-best",id),{}), r={}; for(const g in GAMES){ const v=o&&typeof o==="object"?+o[g]:0; r[g]=v>0&&isFinite(v)?Math.floor(v):0; } return r; }
+let best=loadBest();
+function saveBest(){ lsSet(pkey("lf-best"),best); }
+let game="upper", tCase="upper";
+let tDeck=[], tIdx=0, tStreak=0, tAnswer=null, tLast=null, tBusy=false, tBusyAt=0, tNextT=null, tAfterRight=false, tOrder=null;
+let pLetters=[]; // Problem Letters: the 4 in play (each "A".."Z" or "a".."z"), fixed until the game is left
+const testEl=document.getElementById("test"), choicesEl=document.getElementById("choices"), handsEl=document.getElementById("hands");
+const tGoodEl=document.getElementById("tGood"), tBestEl=document.getElementById("tBest"), tBestN=document.getElementById("tBestN");
+function isNumGame(){ return game==="num"||game==="fingers"; }
+function buildTestDeck(){
+  const d=game==="num"?shuffle(NUMS.slice()):game==="fingers"?shuffle(NUMS.slice(0,10)):spread(shuffle(LETTERS.concat([...problems])));
+  if(d.length>1&&d[0]===tLast){ // no repeat across reshuffles
+    for(let j=1;j<d.length;j++){ if(d[j]!==tLast&&d[j-1]!==d[0]&&d[j+1]!==d[0]){ [d[0],d[j]]=[d[j],d[0]]; break; } }
+  }
+  return d;
+}
+function pop(e){ e.classList.remove("pop"); void e.offsetWidth; e.classList.add("pop"); }
+function showCounts(){ tGoodEl.textContent=tStreak; tBestN.textContent=best[game]||0; fitCounters(); }
+function startTest(c){ startGame(c==="lower"?"lower":"upper"); }
+function startGame(g){
+  stopAll(); mode="test"; game=GAMES[g]?g:"upper";
+  if(game==="problem"&&pLetters.length!==4){ openPicker(); return; }
+  tCase=game==="upper"?"upper":game==="lower"?"lower":"mixed";
+  testEl.dataset.game=game; handsEl.innerHTML=""; fLastKey="";
+  tStreak=0; tLast=null; tOrder=null; showCounts();
+  tDeck=game==="problem"?[]:buildTestDeck(); tIdx=0;
+  show("test");
+  preloadParts([{p:"yes"},{p:"try_again"}].concat(game==="fingers"?[]:[{p:"nope_a"},{p:"nope_an"}]));
+  askQuestion();
+}
+function promptParts(){
+  if(game==="num") return [{p:"find_number"},{num:tAnswer}];
+  if(game==="fingers") return [{p:"how_many_fingers"}];
+  return [{p:"find"},{n:String(tAnswer).toLowerCase()}];
+}
+function promptTest(){ if(mode!=="test"||tAnswer==null) return; utter(promptParts()); }
+// the answer tiles: [{v (what it is), ch (what it shows), kind: "glyph" | "frame" (letters at their real case size) | "num"}]
+function renderTiles(items){
+  choicesEl.innerHTML="";
+  items.forEach((it,i)=>{
+    const b=document.createElement("button");
+    b.className="choice"; b.dataset.l=it.v;
+    if(it.kind==="num"){ b.classList.add("num"); b.textContent=it.ch; b.dataset.ch=it.ch; b.setAttribute("aria-label",it.ch); }
+    else setLetterGlyph(b,it.ch,it.kind==="frame");
+    b.style.color=colors[(i+tIdx*3)%colors.length];
+    onTap(b,()=>choose(b));
+    b.addEventListener("contextmenu",e=>e.preventDefault());
+    choicesEl.appendChild(b);
+  });
+  layoutChoices();
+}
+function askQuestion(){
+  tBusy=false; tBusyAt=0; tAfterRight=false;
+  if(game==="problem") return askProblem();
+  if(tIdx>=tDeck.length){ tDeck=buildTestDeck(); tIdx=0; }
+  const ans=tDeck[tIdx]; tAnswer=ans; tLast=ans;
+  const nx=tDeck[tIdx+1];
+  if(game==="num"){
+    renderTiles(numOpts(ans).map(n=>({v:String(n),ch:String(n),kind:"num"})));
+    preloadParts([{p:"find_number"},{num:ans}]); promptTest();
+    if(nx) preloadParts([{p:"find_number"},{num:nx}]);
+    return;
+  }
+  if(game==="fingers"){
+    drawHands(fingerPic(ans));
+    renderTiles(NUMS.slice(0,10).map(n=>({v:String(n),ch:String(n),kind:"num"}))); // always 1-10 in counting order
+    preloadParts([{p:"how_many_fingers"}]); promptTest();
+    return;
+  }
+  const upper=tCase==="upper";
+  // distractors: problem letters first (up to about half of them), the rest random; all distinct
+  // (with 2 choices the single distractor is a problem letter about half the time)
+  const n=nChoices, pool=LETTERS.filter(x=>x!==ans);
+  const wrong=shuffle(pool.filter(x=>problems.has(x))).slice(0,n===2?(Math.random()<0.5?1:0):Math.max(2,Math.ceil((n-1)/2)));
+  const rest=shuffle(pool.filter(x=>!wrong.includes(x)));
+  for(let i=0;wrong.length<n-1&&i<rest.length;i++) wrong.push(rest[i]);
+  wrong.length=Math.min(wrong.length,n-1);
+  renderTiles(shuffle([ans,...wrong]).map(l=>({v:l,ch:upper?l.toUpperCase():l,kind:"glyph"})));
+  preloadParts([{p:"find"},{n:ans}]);
+  promptTest();
+  if(nx) preloadParts([{p:"find"},{n:nx}]); // the next question
+}
+// Problem Letters: always the same 4 letters (each in the case the grown-up picked); after every right answer the 4
+// are SCRAMBLED - every tile moves to a new place - and the next letter asked is a different one where possible
+function askProblem(){
+  const L=pLetters, lastL=tLast==null?null:String(tLast).toLowerCase();
+  let cand=L.filter(c=>c.toLowerCase()!==lastL); if(!cand.length) cand=L;
+  const ans=cand[Math.floor(Math.random()*cand.length)]; tAnswer=ans; tLast=ans;
+  tOrder=scramble(tOrder&&tOrder.length===L.length?tOrder:null,L);
+  const mixed=L.some(c=>c!==c.toLowerCase())&&L.some(c=>c!==c.toUpperCase());
+  renderTiles(tOrder.map(c=>({v:c,ch:c,kind:mixed?"frame":"glyph"})));
+  preloadParts([{p:"find"},{n:ans.toLowerCase()}]);
+  promptTest();
+  for(const c of L) if(c!==ans) preloadParts([{p:"find"},{n:c.toLowerCase()}]);
+}
+function scramble(prev,items){
+  if(!prev) return shuffle(items.slice());
+  for(let t=0;t<60;t++){ const o=shuffle(items.slice()); if(o.every((c,i)=>c!==prev[i])) return o; }
+  return prev.slice(1).concat(prev[0]); // a rotation also moves every tile
+}
+// Find the Number: 4 choices from 1-20; often one is a near miss (3 / 13, 6 / 9, 11 / 12 ...)
+function numOpts(ans){
+  const near=[ans-1,ans+1,ans+10,ans-10].concat({6:[9],9:[6],16:[19],19:[16]}[ans]||[]).filter(k=>k>=1&&k<=20&&k!==ans);
+  const wrong=shuffle(near).slice(0,Math.random()<0.6?1:0);
+  for(const k of shuffle(NUMS.filter(k=>k!==ans))){ if(wrong.length>=3) break; if(!wrong.includes(k)) wrong.push(k); }
+  return shuffle([ans,...wrong]);
+}
+// ---------- Count the Fingers: two hands drawn in SVG, 0-5 fingers up on each (1-10 in all) ----------
+// Fingers go up in a natural counting order: from the thumb (thumb, index, middle ...) or from the index (index,
+// middle, ring, pinky, then thumb). The split between the hands and the order are random; the exact same picture never
+// comes twice in a row (and neither does the same answer). Every finger carries data-f / data-up, the svg data-total.
+const F_ORDER={thumb:["thumb","index","middle","ring","pinky"], index:["index","middle","ring","pinky","thumb"]};
+let fLastKey="";
+function fingerPic(total){
+  let pic=null;
+  for(let t=0;t<60;t++){
+    const lo=Math.max(0,total-5), hi=Math.min(5,total), a=lo+Math.floor(Math.random()*(hi-lo+1)), b=total-a;
+    const sa=Math.random()<.5?"thumb":"index", sb=Math.random()<.5?"thumb":"index", nm=(k,s)=>k===0||k===5?"":s[0];
+    pic={total,a,b,key:a+nm(a,sa)+"-"+b+nm(b,sb),L:F_ORDER[sa].slice(0,a),R:F_ORDER[sb].slice(0,b)};
+    if(pic.key!==fLastKey) break;
+  }
+  fLastKey=pic.key; return pic;
+}
+const SKIN="#f8cfa5", SKIN_D="#eaa878", SKIN_LINE="#a4673a";
+const FING={pinky:{x:52,w:30,top:82}, ring:{x:88,w:32,top:44}, middle:{x:125,w:33,top:26}, index:{x:162,w:32,top:46}};
+// one hand, palm towards us, thumb on its right (the right-hand picture is the mirror image: both thumbs point inwards)
+function handSvg(up,tx,mirror,side){
+  const t=mirror?"translate("+(tx+262)+",4) scale(-1,1)":"translate("+tx+",4)", st=' stroke="'+SKIN_LINE+'" stroke-width="5" stroke-linejoin="round"';
+  let back="", front="";
+  for(const f of ["pinky","ring","middle","index"]){ const g=FING[f], x=g.x-g.w/2;
+    if(up.includes(f)) back+='<g data-f="'+f+'" data-up="1"><rect x="'+x+'" y="'+g.top+'" width="'+g.w+'" height="'+(176-g.top)+'" rx="'+(g.w/2)+'" fill="'+SKIN+'"'+st+'/><ellipse cx="'+g.x+'" cy="'+(g.top+18)+'" rx="'+(g.w*0.27).toFixed(1)+'" ry="9" fill="#fff" opacity=".6"/></g>';
+    else front+='<g data-f="'+f+'" data-up="0"><rect x="'+(x+1)+'" y="122" width="'+(g.w-2)+'" height="46" rx="'+((g.w-2)/2)+'" fill="'+SKIN_D+'"'+st+'/></g>';
+  }
+  if(up.includes("thumb")) back+='<g data-f="thumb" data-up="1" transform="rotate(42 172 224)"><rect x="155" y="130" width="34" height="100" rx="17" fill="'+SKIN+'"'+st+'/><ellipse cx="172" cy="149" rx="9" ry="9" fill="#fff" opacity=".6"/></g>';
+  else front+='<g data-f="thumb" data-up="0"><rect x="96" y="188" width="94" height="34" rx="17" fill="'+SKIN_D+'"'+st+'/></g>';
+  const wrist='<rect x="66" y="250" width="100" height="56" fill="'+SKIN+'"'+st+'/>';
+  const palm='<path d="M30 160 Q30 134 56 134 L166 134 Q192 134 192 162 L192 232 Q192 272 150 274 L72 274 Q30 272 30 232 Z" fill="'+SKIN+'"'+st+'/>';
+  return '<g data-hand="'+side+'" data-n="'+up.length+'" transform="'+t+'">'+wrist+back+palm+front+'</g>';
+}
+function drawHands(pic){
+  handsEl.innerHTML='<svg viewBox="0 0 544 312" preserveAspectRatio="xMidYMid meet" role="img" aria-label="'+pic.total+' fingers" data-total="'+pic.total+'" data-key="'+pic.key+'">'+
+    handSvg(pic.L,6,false,"L")+handSvg(pic.R,276,true,"R")+'</svg>';
+  window.__fingers={total:pic.total,left:pic.a,right:pic.b,key:pic.key,up:handsEl.querySelectorAll('[data-up="1"]').length}; // test hook
+}
+function numFit(labels,w,h,m,fam){
+  const ink=inkOf("0123456789",fam); let wid=0;
+  try{ const c=document.createElement("canvas").getContext("2d"); c.font="bold 1000px "+fam;
+    for(const s of labels){ const mt=c.measureText(s); const iw=(mt.actualBoundingBoxLeft||0)+(mt.actualBoundingBoxRight||0); wid=Math.max(wid,(iw>0?iw:mt.width)/1000); } }catch(e){}
+  if(!(wid>0)) wid=0.62*Math.max(1,...labels.map(s=>String(s).length));
+  const fs=Math.max(8,Math.floor(Math.min((w-2*m)/wid,(h-2*m)/(ink.asc+ink.desc))*0.92));
+  return {fs,dy:-((ink.A-ink.D)/2+(ink.desc-ink.asc)/2)*fs};
+}
+// ---------- letter sizing from the real font's ink ----------
+// Fonts differ a lot (Chalkboard SE on iPad has tall ascent and deep g j p q y tails), so we measure the actual
+// ink of the letters with this device's font instead of guessing: how far they reach left/right of centre and
+// above/below the baseline (in em), plus the font ascent/descent that decide where the baseline sits in the line box.
+const inkCache={};
+function inkOf(chars,fam){
+  const key=fam+"|"+chars; if(inkCache[key]) return inkCache[key];
+  let r=null;
+  try{
+    const c=document.createElement("canvas").getContext("2d"), S=1000; /* large, so rounding of the metrics is negligible */ c.font="bold "+S+"px "+fam;
+    let half=0,asc=0,desc=0,A=0,D=0,tall=0; const per={};
+    for(const ch of chars){ const m=c.measureText(ch);
+      if(typeof m.actualBoundingBoxAscent!=="number"||!(m.fontBoundingBoxAscent>0)) throw 0;
+      half=Math.max(half,m.width/2+m.actualBoundingBoxLeft,m.actualBoundingBoxRight-m.width/2);
+      asc=Math.max(asc,m.actualBoundingBoxAscent); desc=Math.max(desc,m.actualBoundingBoxDescent);
+      tall=Math.max(tall,m.actualBoundingBoxAscent+m.actualBoundingBoxDescent); per[ch]=[m.actualBoundingBoxAscent/S,m.actualBoundingBoxDescent/S,((m.actualBoundingBoxRight-m.actualBoundingBoxLeft)/2-m.width/2)/S];
+      A=m.fontBoundingBoxAscent; D=m.fontBoundingBoxDescent; }
+    r={half:half/S,asc:asc/S,desc:desc/S,A:A/S,D:D/S,tall:tall/S,per};
+    if(!(r.half>0&&r.asc>0)) r=null;
+  }catch(e){ r=null; }
+  if(!r) r={half:.62,asc:1.02,desc:.42,A:1.0,D:.36,tall:1.44,per:{}}; // old browser without text metrics: size generously small
+  return inkCache[key]=r;
+}
+if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener("loadingdone",()=>{ for(const k in inkCache) delete inkCache[k]; if(mode==="test") layoutChoices(); if(mode==="practice") fitPractice(); if(mode==="pick") layoutPicker(); });
+const UPPERS=LETTERS.join("").toUpperCase(), LOWERS=LETTERS.join("");
+// font size + vertical shift (px) that fit the ink of every letter in a w x h box with margin m, ink box centred
+function inkFit(ink,w,h,m,maxFs){
+  let fs=Math.min((w-2*m)/(2*ink.half),(h-2*m)/(ink.asc+ink.desc)); if(maxFs) fs=Math.min(fs,maxFs); fs=Math.max(8,Math.floor(fs));
+  // whatever the line-height, the baseline sits (A-D)/2 below the line box centre; move the ink's centre onto the box centre
+  const dy=-((ink.A-ink.D)/2+(ink.desc-ink.asc)/2)*fs;
+  return {fs,dy};
+}
+// keep the score numbers clear of the 🔊 and 🏠 buttons (and each other) whatever the font and score
+function fitCounters(){
+  const sp=document.getElementById("speaker"), hb=document.querySelector("#test .homeBtn");
+  tGoodEl.style.fontSize=""; tBestEl.style.fontSize="";
+  if(mode!=="test") return;
+  const R=e=>e.getBoundingClientRect(), T=e=>{ const g=document.createRange(); g.selectNodeContents(e); return g.getBoundingClientRect(); };
+  const hit=(a,b)=>a.width>0&&b.width>0&&Math.min(a.right,b.right)-Math.max(a.left,b.left)>-4&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>-4;
+  for(let k=0;k<14;k++){ const g=T(tGoodEl), b=T(tBestEl), s=R(sp), h=R(hb);
+    if(!(hit(g,s)||hit(b,s)||hit(g,h)||hit(b,h)||hit(g,b))) break;
+    for(const c of [tGoodEl,tBestEl]) c.style.fontSize=Math.max(14,parseFloat(getComputedStyle(c).fontSize)*0.88)+"px"; }
+}
+// pick the columns x rows that give the biggest tiles for this screen, then size the font so every letter's ink
+// (tails of g j p q y, tall b d f h k l t, the i/j dots, wide W M) fits inside the tile border with a margin
+function layoutChoices(){
+  fitCounters();
+  const n=choicesEl.children.length; if(!n) return;
+  const r=choicesEl.getBoundingClientRect(); if(!r.width||!r.height) return;
+  const vmin=Math.min(window.innerWidth,window.innerHeight), gap=vmin*0.02, pad=vmin*0.02, bw=vmin*0.008, rad=Math.max(0,vmin*0.04-bw);
+  const fam=getComputedStyle(choicesEl).fontFamily, ink=inkOf(tCase==="upper"?UPPERS:tCase==="lower"?LOWERS:LOWERS+UPPERS,fam);
+  const W=r.width-pad, H=r.height-pad;
+  let best=null;
+  for(let cols=1;cols<=n;cols++){ const rows=Math.ceil(n/cols); if(cols*rows!==n) continue; // full grid only: 2x2, 3x2/2x3, 4x2/2x4, 5x2/2x5 ...
+    const cw=(W-gap*(cols-1))/cols, ch=(H-gap*(rows-1))/rows; if(cw<=0||ch<=0) continue;
+    const iw=cw-2*bw, ih=ch-2*bw, m=Math.max(Math.min(iw,ih)*0.08,rad*0.3+2); // clear of the border and the rounded corners
+    const score=Math.min(ch*0.78,cw*0.8); // the same grid choice as before (2x5 on a portrait iPad, 5x2 in landscape ...)
+    if(!best||score>best.score){ const f=inkFit(Object.assign({},ink,{asc:ink.tall,desc:0}),iw,ih,m); /* sized for the tallest single letter */ best={cols,rows,fs:f.fs,dy:f.dy,score,iw,ih,m}; } }
+  if(!best) return;
+  if(isNumGame()){ // v23: number tiles, all one size, fitted to the widest number shown ("10", "20")
+    choicesEl.style.gridTemplateColumns="repeat("+best.cols+",1fr)"; choicesEl.style.gridTemplateRows="repeat("+best.rows+",1fr)";
+    choicesEl.style.gap=gap+"px";
+    const nf=numFit([...choicesEl.children].map(b=>b.dataset.l),best.iw,best.ih,best.m,fam);
+    choicesEl.style.setProperty("--fs",nf.fs+"px"); choicesEl.style.setProperty("--pt","0px"); choicesEl.style.setProperty("--pb","0px");
+    for(const b of choicesEl.children){ b.style.paddingTop=Math.max(0,2*nf.dy).toFixed(1)+"px"; b.style.paddingBottom=Math.max(0,-2*nf.dy).toFixed(1)+"px"; b.style.paddingLeft=b.style.paddingRight="0px"; }
+    return; }
+  choicesEl.style.gridTemplateColumns="repeat("+best.cols+",1fr)"; choicesEl.style.gridTemplateRows="repeat("+best.rows+",1fr)";
+  choicesEl.style.gap=gap+"px"; choicesEl.style.setProperty("--fs",best.fs+"px");
+  const padOf=dy=>[Math.max(0,2*dy).toFixed(1)+"px",Math.max(0,-2*dy).toFixed(1)+"px"];
+  // centre every glyph on its own ink box (top of its ascender, cap or x-height down to its descender), so a p/q/y/j/g
+  // is lifted as far as it hangs below the line and every letter gets the same space above and below
+  choicesEl.style.setProperty("--pt","0px"); choicesEl.style.setProperty("--pb","0px");
+  for(const b of choicesEl.children){
+    if(b.querySelector("svg.glyph")){ b.style.padding="0"; continue; } // manuscript SVG already fitted in its viewBox
+    const g=ink.per[b.dataset.ch||b.textContent]||[ink.asc,ink.desc,0];
+    const [pt,pb]=padOf(-((ink.A-ink.D)/2+(g[1]-g[0])/2)*best.fs), [pl,pr]=padOf(-g[2]*best.fs); // and left/right on its ink, not its advance
+    b.style.paddingTop=pt; b.style.paddingBottom=pb; b.style.paddingLeft=pl; b.style.paddingRight=pr; }
+}
+// practice card: the same ink fit for all 52 letters inside the letter area (room left for the tap "pop")
+function fitPractice(){
+  const box=document.getElementById("letterBox"), w=box.clientWidth, h=box.clientHeight; if(!w||!h) return;
+  if(el.querySelector("svg.glyph")){ el.style.fontSize=""; el.style.padding="0"; return; } // manuscript SVG fills #letter.ms
+  const ink=inkOf(LOWERS+UPPERS,getComputedStyle(el).fontFamily);
+  const m=Math.min(w,h)*0.04, POP=1.15, f=inkFit(Object.assign({},ink,{asc:ink.tall,desc:0}),w/POP,h/POP,m/POP,Math.min(window.innerHeight*0.45,window.innerWidth*0.6));
+  // same size for every letter; each one centred on its own ink box
+  const g=ink.per[el.dataset.ch||el.textContent]||[ink.asc,ink.desc,0], dy=-((ink.A-ink.D)/2+(g[1]-g[0])/2)*f.fs, dx=-g[2]*f.fs;
+  el.style.fontSize=f.fs+"px"; el.style.paddingTop=Math.max(0,2*dy).toFixed(1)+"px"; el.style.paddingBottom=Math.max(0,-2*dy).toFixed(1)+"px";
+  el.style.paddingLeft=Math.max(0,2*dx).toFixed(1)+"px"; el.style.paddingRight=Math.max(0,-2*dx).toFixed(1)+"px";
+}
+function advance(){
+  clearWait(tNextT); tNextT=null;
+  if(mode!=="test") return;
+  tIdx++; askQuestion();
+}
+function isRight(b){ return game==="problem"?b.dataset.l.toLowerCase()===String(tAnswer).toLowerCase():b.dataset.l===String(tAnswer); } // Problem Letters: A and a both count when both were picked
+function numArt(n){ return (n===8||n===11||n===18)?"nope_an":"nope_a"; } // "an 8", "an 11", "an 18"
+function choose(b){
+  if(mode!=="test"||tBusy||!b.isConnected) return;
+  safe(recordTry,tAnswer,b.dataset.l,isRight(b)); // v23: per-player progress (right / wrong / tapped instead)
+  if(isRight(b)){
+    tBusy=true; tBusyAt=Date.now(); tAfterRight=true; tStreak++;
+    if(tStreak>(best[game]||0)){ best[game]=tStreak; saveBest(); pop(tBestEl); }
+    showCounts(); pop(tGoodEl);
+    b.classList.add("right");
+    const f=document.getElementById("tFlash"); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),350);
+    // next question once "Yes!" has been heard (1.3 s minimum as before; capped, so nothing can leave the test stuck "busy")
+    clearWait(tNextT); tNextT=afterSaid([{p:"yes"}],Math.round(1300*spd().wait),advance);
+  }else{
+    // v20: "Nope, that's a/an" + letter name + "Try again!" (v23: the same for numbers; Count the Fingers: "Try again!").
+    // The streak goes back to 0. Ignore further choice taps until the whole feedback finishes.
+    tBusy=true; tBusyAt=Date.now(); tAfterRight=false; tStreak=0; showCounts();
+    b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); // replay the shake
+    const w=b.dataset.l; let parts, min=2400;
+    if(game==="fingers"){ parts=[{p:"try_again"}]; min=1300; }
+    else if(game==="num"){ parts=[{p:numArt(+w)},{num:+w},{p:"try_again"}]; }
+    else { const l=w.toLowerCase(); parts=[{p:nopeArt(l)},{n:l},{p:"try_again"}]; }
+    clearWait(tNextT);
+    tNextT=afterSaid(parts,Math.round(min*spd().wait),()=>{ tBusy=false; tBusyAt=0; tNextT=null; });
+  }
+}
+onTap(document.getElementById("speaker"),e=>{e&&e.stopPropagation&&e.stopPropagation(); promptTest();});
+
+
+// ---------- settings: problem letters ----------
+const pGrid=document.getElementById("pGrid");
+function renderProblems(){
+  pGrid.innerHTML="";
+  LETTERS.forEach(l=>{
+    const b=document.createElement("button");
+    b.className="pl"+(problems.has(l)?" on":""); b.textContent=l.toUpperCase()+l; b.dataset.l=l;
+    b.setAttribute("aria-pressed",problems.has(l)?"true":"false");
+    onTap(b,()=>{ if(problems.has(l)) problems.delete(l); else problems.add(l); saveProblems();
+      b.classList.toggle("on",problems.has(l)); b.setAttribute("aria-pressed",problems.has(l)?"true":"false"); });
+    b.addEventListener("contextmenu",e=>e.preventDefault());
+    pGrid.appendChild(b);
+  });
+}
+function openSettings(){ stopAll(); mode="settings"; renderProblems(); renderChoiceOpts(); renderVoiceOpts(); renderWhoOpts(); show("settings");
+  preloadParts([{p:"speed_slow"},{p:"speed_normal"},{p:"speed_fast"},{p:"find"},{n:"a"}]); }
+onTap(document.getElementById("pClear"),()=>{ problems.clear(); saveProblems(); renderProblems(); });
+function renderVoiceOpts(){ document.querySelectorAll("#vRow button.vs").forEach(b=>{ const on=b.dataset.v===voiceSpeed; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
+document.querySelectorAll("#vRow button.vs").forEach(b=>onTap(b,()=>{ voiceSpeed=b.dataset.v; lsSet(VOICE_KEY,voiceSpeed); renderVoiceOpts(); utter([{p:"speed_"+voiceSpeed}]); }));
+// who speaks: Dad / Mom (recorded) / Computer; buttons come from VOICES
+const wRow=document.getElementById("wRow");
+VOICES.forEach(v=>{ const b=document.createElement("button"); b.className="vs vw"; b.dataset.w=v.id; b.textContent=v.label; wRow.appendChild(b);
+  onTap(b,()=>{ voiceWho=v.id; lsSet(WHO_KEY,voiceWho); renderWhoOpts(); utter([{p:"find"},{n:"a"}]); cacheVoices(); }); });
+function renderWhoOpts(){ wRow.querySelectorAll("button.vw").forEach(b=>{ const on=b.dataset.w===voiceWho; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
+function renderChoiceOpts(){ document.querySelectorAll("#cRow button.cn").forEach(b=>{ const on=+b.dataset.n===nChoices; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }); }
+document.querySelectorAll("#cRow button.cn").forEach(b=>onTap(b,()=>{ nChoices=+b.dataset.n; lsSet(CHOICES_KEY,nChoices); renderChoiceOpts(); }));
+onTap(document.getElementById("pDone"),goHome);
+onTap(document.getElementById("pScores"),()=>openScores());
+// ---------- v23: Problem Letters picker (a grown-up picks exactly 4: any letters, each upper- or lowercase) ----------
+function pickKey(id){ return pkey("lf-problem4",id); } // per player
+function loadPick(id){ const a=lsGet(pickKey(id),[]); if(!Array.isArray(a)) return [];
+  return a.filter((c,i)=>typeof c==="string"&&c.length===1&&LETTERS.includes(c.toLowerCase())&&a.indexOf(c)===i).slice(0,4); }
+let pick=[];
+const pkU=document.getElementById("pkU"), pkL=document.getElementById("pkL"), pkSlots=document.getElementById("pkSlots"), pkStart=document.getElementById("pkStart");
+function buildPicker(){ if(pkU.children.length) return; // built on first use (the letter shapes are defined further down)
+  for(const [grid,up] of [[pkU,true],[pkL,false]]) LETTERS.forEach(l=>{
+    const c=up?l.toUpperCase():l, b=document.createElement("button");
+    b.className="pk"; b.dataset.c=c; setLetterGlyph(b,c,true); b.setAttribute("aria-pressed","false");
+    onTap(b,()=>togglePick(c)); b.addEventListener("contextmenu",e=>e.preventDefault()); grid.appendChild(b); }); }
+pkSlots.querySelectorAll("button.slot").forEach(s=>{ onTap(s,()=>{ const c=pick[+s.dataset.i]; if(c) togglePick(c); }); s.addEventListener("contextmenu",e=>e.preventDefault()); });
+function togglePick(c){
+  const i=pick.indexOf(c);
+  if(i>=0) pick.splice(i,1);
+  else if(pick.length<4) pick.push(c);
+  else { pkSlots.classList.remove("shake"); void pkSlots.offsetWidth; pkSlots.classList.add("shake"); return; } // already 4: take one out first
+  renderPicker();
+}
+function renderPicker(){
+  for(const b of document.querySelectorAll("#pkGrids button.pk")){ const on=pick.includes(b.dataset.c); b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); }
+  pkSlots.querySelectorAll("button.slot").forEach((s,i)=>{ const c=pick[i];
+    if(c) setLetterGlyph(s,c,true); else { s.innerHTML=""; delete s.dataset.ch; s.removeAttribute("aria-label"); }
+    s.classList.toggle("full",!!c); });
+  pkStart.classList.toggle("off",pick.length!==4); safe(renderAuto);
+}
+function layoutPicker(){
+  const land=window.innerWidth>window.innerHeight, cols=land?13:(window.innerWidth>=700?9:7), rows=Math.ceil(26/cols);
+  for(const g of [pkU,pkL]){ g.style.gridTemplateColumns="repeat("+cols+",1fr)"; g.style.gridTemplateRows="repeat("+rows+",1fr)"; }
+}
+// coming back into Problem Letters always shows the picker, filled in with the last 4 (saved), ready to Start
+function openPicker(){ stopAll(); mode="pick"; buildPicker(); pick=loadPick(); renderPicker(); show("pick"); layoutPicker(); }
+onTap(document.getElementById("pkClear"),()=>{ pick=[]; renderPicker(); });
+// v23: two quick starts at the top: Auto fills the 4 picks from this player's worst letters (Progress); the grown-up can
+// still swap any of them (tap a slot to take it out, tap a letter to put one in) before Start. Pick my own starts empty.
+function renderAuto(){ const w=worstLetters(curPlayer), b=document.getElementById("pkAuto");
+  b.classList.toggle("off",w.length<4); document.getElementById("pkAutoNote").textContent=w.length<4?"not enough play yet":"from "+playerName()+"'s misses"; }
+onTap(document.getElementById("pkAuto"),()=>{ const w=worstLetters(curPlayer); if(w.length<4) return; pick=w.slice(0,4); renderPicker(); });
+onTap(document.getElementById("pkOwn"),()=>{ pick=[]; renderPicker(); });
+onTap(pkStart,()=>{ if(mode!=="pick"||pick.length!==4) return; lsSet(pickKey(),pick); pLetters=pick.slice(); startGame("problem"); });
+
+// ---------- v23: high scores + saved Problem Letters (Settings > ⭐ Scores). Resets take two taps ("Sure?"). ----------
+function twoTap(b,fn){ let t=null;
+  onTap(b,()=>{ if(b.classList.contains("off")) return;
+    if(b.classList.contains("sure")){ clearTimeout(t); b.classList.remove("sure"); b.textContent=b.dataset.txt; safe(fn); return; }
+    b.dataset.txt=b.textContent; b.textContent="Sure?"; b.classList.add("sure");
+    t=setTimeout(()=>{ b.classList.remove("sure"); b.textContent=b.dataset.txt; },3000); }); }
+const hsList=document.getElementById("hsList");
+for(const g in GAMES){ const r=document.createElement("div"); r.className="hsRow"; r.dataset.g=g;
+  r.innerHTML='<span class="lbl"></span><span class="val"></span><button class="rs">Reset</button>'; r.querySelector(".lbl").textContent=GAMES[g].label;
+  hsList.appendChild(r); twoTap(r.querySelector("button"),()=>{ best[g]=0; saveBest(); renderScores(); }); }
+hsList.style.cssText="display:flex;flex-direction:column;gap:1.4vmin;flex:none";
+twoTap(document.getElementById("hsAll"),()=>{ for(const g in best) best[g]=0; saveBest(); renderScores(); });
+twoTap(document.getElementById("hsEvery"),()=>{ for(const p of players) try{ localStorage.removeItem(pkey("lf-best",p.id)); }catch(e){} best=loadBest(); renderScores(); });
+twoTap(document.getElementById("plClear"),()=>{ try{ localStorage.removeItem(pickKey()); }catch(e){} pick=[]; pLetters=[]; renderScores(); });
+function renderScores(){
+  document.getElementById("scName").textContent=playerName(); document.querySelectorAll("#scores .nm").forEach(e=>e.textContent=playerName());
+  hsList.querySelectorAll(".hsRow").forEach(r=>{ const g=r.dataset.g, v=best[g]||0; r.querySelector(".val").textContent="⭐ "+v; r.querySelector("button").classList.toggle("off",!v); });
+  document.getElementById("hsAll").classList.toggle("off",!Object.values(best).some(v=>v>0));
+  const saved=loadPick(), el=document.getElementById("plSaved"); el.innerHTML="";
+  if(!saved.length) el.textContent="None saved";
+  else for(const c of saved){ const sp=document.createElement("span"); sp.innerHTML=glyphSvg(c,true); el.appendChild(sp); }
+  document.getElementById("plClear").classList.toggle("off",!saved.length);
+}
+function openScores(){ stopAll(); mode="scores"; renderScores(); show("scores"); }
+onTap(document.getElementById("scDone"),()=>openSettings());
+// ---------- v23: Who's playing? / Settings > Players / Settings > Stats / play-time tracking ----------
+const PCOL=["#e76f51","#3a86ff","#2a9d8f","#8e44ad","#d81b60","#f4a261","#27ae60","#457b9d"];
+function setPlayer(id){ if(!players.some(p=>p.id===id)) return; safe(flushTime); curPlayer=id; lsSet(CUR_KEY,id);
+  best=loadBest(); pLetters=[]; pick=[]; timeData=loadTime(); progData=loadProg(); renderPlayerBits(); }
+function renderPlayerBits(){ document.getElementById("pName").textContent=playerName(); }
+const whoList=document.getElementById("whoList");
+function openWho(){ stopAll(); mode="who"; whoForm.classList.remove("on"); document.getElementById("whoAdd").style.display=players.length>=8?"none":""; whoList.innerHTML=""; whoList.classList.toggle("many",players.length>4);
+  players.forEach((p,i)=>{ const b=document.createElement("button"); b.className="big"; b.dataset.id=p.id; b.style.background=PCOL[i%PCOL.length];
+    b.innerHTML='<span class="ico">🙂</span>'; b.appendChild(document.createTextNode(p.name));
+    onTap(b,()=>{ if(mode!=="who") return; setPlayer(p.id); goHome(); }); whoList.appendChild(b); });
+  show("who"); }
+onTap(document.getElementById("switchP"),()=>{ if(mode==="home") openWho(); });
+// Settings > Players: add, rename, remove (removing deletes that player's scores, Problem Letters and time)
+let plEditing=null;
+const plList=document.getElementById("plList"), plNew=document.getElementById("plNew");
+function cleanName(s){ return String(s||"").replace(/\s+/g," ").trim().slice(0,20); }
+function savePlayers(){ lsSet(PLAYERS_KEY,players); }
+function renderPlayers(){
+  plList.innerHTML="";
+  players.forEach((p,i)=>{ const r=document.createElement("div"); r.className="hsRow"; r.dataset.id=p.id;
+    if(plEditing===p.id){ const inp=document.createElement("input"); inp.className="plIn"; inp.maxLength=20; inp.value=p.name; r.appendChild(inp);
+      const sv=document.createElement("button"); sv.className="rs ok"; sv.textContent="Save"; r.appendChild(sv);
+      const go=()=>{ const n=cleanName(inp.value); if(n){ p.name=n; savePlayers(); } plEditing=null; renderPlayers(); renderPlayerBits(); };
+      onTap(sv,go); inp.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); });
+    } else {
+      const l=document.createElement("span"); l.className="lbl"; l.textContent=p.name+(p.id===curPlayer?"  (playing)":""); l.style.color=PCOL[i%PCOL.length]; r.appendChild(l);
+      const rn=document.createElement("button"); rn.className="rs ren"; rn.textContent="Rename"; r.appendChild(rn); onTap(rn,()=>{ plEditing=p.id; renderPlayers(); const x=plList.querySelector("input"); if(x) safe(()=>x.focus()); });
+      if(!permanent(p.id)){ const rm=document.createElement("button"); rm.className="rs rm"; rm.textContent="Delete"; r.appendChild(rm); // needs the grown-up code
+        onTap(rm,()=>askCode(()=>removePlayer(p.id))); }
+    }
+    plList.appendChild(r); });
+  document.getElementById("plAdd").classList.toggle("off",players.length>=8);
+}
+function removePlayer(id){ if(players.length<2||permanent(id)) return; safe(flushTime);
+  players=players.filter(p=>p.id!==id); savePlayers();
+  for(const k of ["lf-best","lf-problem4","lf-time","lf-prog"]) try{ localStorage.removeItem(pkey(k,id)); }catch(e){}
+  if(curPlayer===id){ timeDirty=0; setPlayer(players[0].id); }
+  renderPlayers(); }
+function newPlayer(name){ const n=cleanName(name); if(!n||players.length>=8) return null;
+  let k=3; while(players.some(p=>p.id==="p"+k)) k++; // p1, p2 are Blakeli and Little Bobby
+  const p={id:"p"+k,name:n}; players.push(p); savePlayers(); return p; }
+function addPlayer(){ if(!newPlayer(plNew.value)) return; plNew.value=""; safe(()=>plNew.blur()); renderPlayers(); }
+onTap(document.getElementById("plAdd"),addPlayer);
+// anyone can add a player from Who's playing?
+const whoNew=document.getElementById("whoNew"), whoForm=document.getElementById("whoForm");
+onTap(document.getElementById("whoAdd"),()=>{ if(players.length>=8) return; whoForm.classList.add("on"); document.getElementById("whoAdd").style.display="none"; safe(()=>whoNew.focus()); });
+function whoAddGo(){ if(!newPlayer(whoNew.value)) return; whoNew.value=""; safe(()=>whoNew.blur()); openWho(); }
+onTap(document.getElementById("whoOk"),whoAddGo); whoNew.addEventListener("keydown",e=>{ if(e.key==="Enter") whoAddGo(); });
+onTap(document.getElementById("whoCancel"),()=>{ whoNew.value=""; safe(()=>whoNew.blur()); openWho(); });
+// deleting a player: type the grown-up code on a number keypad
+const DEL_CODE="2323", kp=document.getElementById("keypad"), kpDots=document.getElementById("kpDots");
+let kpVal="", kpThen=null;
+function askCode(fn){ kpVal=""; kpThen=fn; kpShow(); kp.classList.add("on"); }
+function kpClose(){ kp.classList.remove("on"); kpThen=null; kpVal=""; }
+function kpShow(){ kpDots.textContent="●".repeat(kpVal.length)+"○".repeat(4-kpVal.length); }
+kp.querySelectorAll("button[data-k]").forEach(b=>onTap(b,()=>{ if(!kp.classList.contains("on")) return; const k=b.dataset.k;
+  if(k==="x"){ kpClose(); return; } if(k==="b"){ kpVal=kpVal.slice(0,-1); kpShow(); return; }
+  if(kpVal.length>=4) return; kpVal+=k; kpShow();
+  if(kpVal.length===4){ if(kpVal===DEL_CODE){ const f=kpThen; kpClose(); if(f) safe(f); }
+    else { kpDots.classList.remove("shake"); void kpDots.offsetWidth; kpDots.classList.add("shake"); setTimeout(()=>{ kpVal=""; kpShow(); },350); } } }));
+plNew.addEventListener("keydown",e=>{ if(e.key==="Enter") addPlayer(); });
+function openPlayers(){ kpClose(); stopAll(); mode="players"; plEditing=null; renderPlayers(); show("players"); }
+onTap(document.getElementById("pPlayers"),()=>openPlayers());
+onTap(document.getElementById("plDone"),()=>openSettings());
+// play time: counted once a second while the app is visible, in a game or a menu, and someone touched it in the last 2 minutes
+const TIME_CATS={upper:"Uppercase Test",lower:"Lowercase Test",problem:"Problem Letters",practice:"Practice",draw:"Draw",num:"Find the Number",fingers:"Count the Fingers",menus:"Menus"};
+const IDLE_MS=120000;
+function loadTime(id){ const o=lsGet(pkey("lf-time",id),{})||{};
+  return {total:+o.total||0, days:(o.days&&typeof o.days==="object")?o.days:{}, games:(o.games&&typeof o.games==="object")?o.games:{}}; }
+let timeData=loadTime(), lastTick=Date.now(), lastAct=Date.now(), timeDirty=0;
+function dayKey(t){ const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function timeCat(){ if(mode==="test") return game; if(mode==="practice"||mode==="draw") return mode; if(mode==="home"||mode==="abc"||mode==="nums"||mode==="pick") return "menus"; return null; }
+function timeTick(now){ now=now||Date.now(); const dt=Math.min(now-lastTick,2000); lastTick=now;
+  if(dt<=0||document.hidden||now-lastAct>IDLE_MS) return; const c=timeCat(); if(!c) return;
+  timeData.total+=dt; const k=dayKey(now); timeData.days[k]=(+timeData.days[k]||0)+dt; timeData.games[c]=(+timeData.games[c]||0)+dt;
+  timeDirty+=dt; if(timeDirty>=10000) flushTime(); }
+function flushTime(){ if(!timeDirty) return; timeDirty=0; const ks=Object.keys(timeData.days).sort(); while(ks.length>90) delete timeData.days[ks.shift()]; lsSet(pkey("lf-time"),timeData); }
+setInterval(()=>safe(timeTick),1000);
+for(const t of ["touchstart","mousedown","pointerdown","keydown"]) document.addEventListener(t,()=>{ lastAct=Date.now(); },{capture:true,passive:true});
+document.addEventListener("visibilitychange",()=>{ lastTick=Date.now(); if(document.hidden) safe(flushTime); });
+window.addEventListener("pagehide",()=>safe(flushTime));
+function fmtTime(ms){ const s=Math.floor((ms||0)/1000); if(s<60) return s+" s"; const m=Math.floor(s/60), h=Math.floor(m/60); return h?h+" h "+(m%60)+" min":m+" min"; }
+function openStats(){ stopAll(); mode="stats"; safe(flushTime); const el=document.getElementById("stList"); el.innerHTML=""; const today=dayKey(Date.now());
+  players.forEach((p,i)=>{ const t=p.id===curPlayer?timeData:loadTime(p.id), b=loadBest(p.id), c=document.createElement("div"); c.className="stCard"; c.dataset.id=p.id;
+    c.dataset.today=+t.days[today]||0; c.dataset.total=t.total;
+    let rows=""; for(const g in TIME_CATS){ const ms=+t.games[g]||0, hs=g in b?'<span class="hs">⭐ '+b[g]+'</span>':""; if(ms||b[g]) rows+='<tr data-g="'+g+'"><td>'+TIME_CATS[g]+'</td><td>'+fmtTime(ms)+'</td><td>'+hs+'</td></tr>'; }
+    c.innerHTML='<div class="stHead"><b></b><span>Today <em>'+fmtTime(+t.days[today]||0)+'</em></span><span>Total <em>'+fmtTime(t.total)+'</em></span></div>'+(rows?'<table>'+rows+'</table>':'<p class="hint">No play time yet</p>');
+    const nm=c.querySelector("b"); nm.textContent=p.name; nm.style.color=PCOL[i%PCOL.length]; el.appendChild(c); });
+  show("stats"); }
+onTap(document.getElementById("pStats"),()=>openStats());
+onTap(document.getElementById("stDone"),()=>openSettings());
+onTap(document.getElementById("stProg"),()=>openProgress());
+renderPlayerBits();
+// ---------- v23: Progress - every answer tap per player: right / wrong and what was tapped instead ----------
+// lf-prog:<id> = {items:{"L:b":{r,w,c:{"L:d":3}}, "L:B":..., "N:7":..., "F:6":...}} (letters by case; numbers 1-20; finger counts)
+const PROG_MIN=3; // tries needed before an item is ranked
+function loadProg(id){ const o=lsGet(pkey("lf-prog",id),{}); return {items:(o&&o.items&&typeof o.items==="object")?o.items:{}}; }
+let progData=loadProg();
+function progItem(v){ v=String(v); if(game==="num") return "N:"+v; if(game==="fingers") return "F:"+v; if(game==="upper") return "L:"+v.toUpperCase(); if(game==="lower") return "L:"+v.toLowerCase(); return "L:"+v; }
+function recordTry(ans,tapped,right){ if(ans==null) return; const k=progItem(ans), it=progData.items[k]||(progData.items[k]={r:0,w:0,c:{}});
+  if(right) it.r++; else { it.w++; const t=progItem(tapped); it.c[t]=(+it.c[t]||0)+1; }
+  lsSet(pkey("lf-prog"),progData); }
+function topConf(c){ let k=null,n=0; for(const x in c||{}) if(c[x]>n){ n=c[x]; k=x; } return k?{k,n}:null; }
+function ranked(items,kind){ // worst first: miss rate, then more misses; only items tried PROG_MIN+ times and missed at least once
+  return Object.entries(items).filter(([k,v])=>k[0]===kind&&v&&v.w>0).map(([k,v])=>({k,id:k.slice(2),r:+v.r||0,w:+v.w||0,n:(+v.r||0)+(+v.w||0),conf:topConf(v.c)}))
+    .map(x=>Object.assign(x,{rate:x.w/x.n})).sort((a,b)=>(b.n>=PROG_MIN)-(a.n>=PROG_MIN)||b.rate-a.rate||b.w-a.w||a.id.localeCompare(b.id)); }
+function worstLetters(id){ return ranked(loadProg(id).items,"L").slice(0,4).map(x=>x.id); } // the 4 worst (ranked first, then any missed)
+let progWho=null;
+function itemHtml(k){ const id=k.slice(2); return k[0]==="L"?'<span class="pgG">'+glyphSvg(id,true)+'</span>':'<span class="pgN">'+id+'</span>'; }
+function openProgress(){ stopAll(); mode="progress"; if(!players.some(p=>p.id===progWho)) progWho=curPlayer; renderProgress(); show("progress"); }
+function renderProgress(){
+  const chips=document.getElementById("pgWho"); chips.innerHTML="";
+  players.forEach((p,i)=>{ const b=document.createElement("button"); b.className="rs pgChip"+(p.id===progWho?" on":""); b.textContent=p.name; b.dataset.id=p.id; b.style.background=p.id===progWho?PCOL[i%PCOL.length]:"#bbb";
+    onTap(b,()=>{ progWho=p.id; renderProgress(); }); chips.appendChild(b); });
+  const items=(progWho===curPlayer?progData:loadProg(progWho)).items, out=document.getElementById("pgList"); out.innerHTML="";
+  for(const [kind,title] of [["L","Letters"],["N","Numbers (Find the Number)"],["F","Finger counts"]]){
+    const all=ranked(items,kind), top=all.filter(x=>x.n>=PROG_MIN).slice(0,10), few=all.filter(x=>x.n<PROG_MIN).length;
+    const sec=document.createElement("div"); sec.className="stCard pgSec"; sec.dataset.kind=kind;
+    let h='<div class="stHead"><b>'+title+'</b></div>';
+    if(!top.length) h+='<p class="hint">Nothing to show yet'+(few?' ('+few+' missed, fewer than '+PROG_MIN+' tries)':'')+'</p>';
+    else { h+='<table>'; for(const x of top) h+='<tr data-k="'+x.k+'"><td>'+itemHtml(x.k)+'</td><td class="pgR">✓ '+x.r+'</td><td class="pgW">✗ '+x.w+'</td><td class="pgP">'+Math.round(x.rate*100)+'% missed</td><td class="pgC">'+(x.conf?'mixed up with '+itemHtml(x.conf.k)+' ×'+x.conf.n:'')+'</td></tr>'; h+='</table>';
+      if(few) h+='<p class="hint">+ '+few+' more missed, fewer than '+PROG_MIN+' tries so far</p>'; }
+    sec.innerHTML=h; out.appendChild(sec); }
+  const w=worstLetters(progWho), use=document.getElementById("pgUse");
+  use.classList.toggle("off",w.length<4); use.textContent=w.length<4?"Use these as Problem Letters (needs 4 missed letters)":"Use these as Problem Letters: "+w.join(" ");
+  document.getElementById("pgName").textContent=playerName(progWho);
+}
+onTap(document.getElementById("pgUse"),()=>{ const w=worstLetters(progWho); if(w.length<4) return;
+  lsSet(pickKey(progWho),w); if(progWho===curPlayer) pick=w.slice();
+  const u=document.getElementById("pgUse"); u.textContent="✓ Saved as "+playerName(progWho)+"'s Problem Letters"; });
+twoTap(document.getElementById("pgReset"),()=>{ try{ localStorage.removeItem(pkey("lf-prog",progWho)); }catch(e){} if(progWho===curPlayer) progData=loadProg(); renderProgress(); });
+onTap(document.getElementById("pProgress"),()=>openProgress());
+onTap(document.getElementById("pgDone"),()=>openSettings());
+
+
+
+// ---------- draw mode ----------
+const DCASE_KEY="lf-draw-case", DOUT_KEY="lf-draw-outline";
+let dCase=lsGet(DCASE_KEY,"upper")==="lower"?"lower":"upper";
+let dOutline=lsGet(DOUT_KEY,true)!==false;
+const dStage=document.getElementById("dStage"), guideC=document.getElementById("dGuide"), inkC=document.getElementById("dInk"), demoC=document.getElementById("dDemo"), dYay=document.getElementById("dYay");
+const gctx=guideC.getContext("2d"), ictx=inkC.getContext("2d"), mctx=demoC.getContext("2d");
+const INK=["#e63946","#3a86ff","#2a9d8f","#f4a261","#8e44ad","#e76f51","#27ae60","#d81b60"];
+let dLetter=null, dPrev=null, strokes=[], dActive=new Map(), dW=0, dH=0, dLine=20, dGlyph=null, dLines=null;
+let dPassed=false, dPassedAt=0, dNextT=null, dDemoH=null, dCheckT=null, inkN=0, dRetries=0;
+function dChar(){ return dCase==="upper"?dLetter.toUpperCase():dLetter; }
+function syncDrawToggles(){
+  document.getElementById("dCase").textContent=dCase==="upper"?"ABC":"abc";
+  const o=document.getElementById("dOutline"); o.textContent=dOutline?"Outline ON":"Outline OFF"; o.classList.toggle("off",!dOutline);
+}
+// ---------- letter shapes: ball-and-stick school manuscript, like Dad's "Alphabet Practice Chart" ----------
+// Each letter is its strokes, in the order and direction children are taught. Units: capital height 1
+// (top line y=0, midline y=.5, baseline y=1, descenders to y=1.42). The dotted outline, the "show me" animation
+// and the drawing check all use these strokes.
+const SHAPES=(()=>{
+  const P=(...a)=>{ const o=[]; for(let i=0;i<a.length;i+=2) o.push([a[i],a[i+1]]); return o; }; // straight lines through points
+  // elliptical arc; degrees, 0 = 3 o'clock, 90 = 6 o'clock (increasing = clockwise on screen)
+  const A=(cx,cy,rx,ry,a0,a1)=>{ const n=Math.max(6,Math.ceil(Math.abs(a1-a0)/5)), o=[];
+    for(let i=0;i<=n;i++){ const t=(a0+(a1-a0)*i/n)*Math.PI/180; o.push([cx+rx*Math.cos(t),cy+ry*Math.sin(t)]); } return o; };
+  const J=(...ps)=>{ const o=[]; for(const p of ps) for(const q of p){ const l=o[o.length-1]; if(!l||Math.hypot(l[0]-q[0],l[1]-q[1])>1e-4) o.push(q); } return o; }; // one stroke from pieces
+  const D=(x,y)=>[[x,y]]; // a dot
+  const bump=(x,w,h)=>J(A(x+w/2,.5+h,w/2,h,180,360),P(x+w,.5+h,x+w,1)); // n / h / m hump: up out of the stem, over, straight down
+  const bowlL=(x)=>A(x+.25,.75,.25,.25,-35,-395); // a d g q: circle back (counter-clockwise) all the way around
+  const bowlR=(x)=>A(x+.25,.75,.25,.25,180,540);  // b p: from the stem, circle forward (clockwise)
+  return {
+    A:[P(.34,0,0,1),P(.34,0,.68,1),P(.12,.64,.56,.64)],
+    B:[P(0,0,0,1),J(P(0,0,.3,0),A(.3,.24,.22,.24,-90,90),P(.3,.48,0,.48)),J(P(0,.48,.32,.48),A(.32,.74,.26,.26,-90,90),P(.32,1,0,1))],
+    C:[A(.35,.5,.35,.5,-45,-315)],
+    D:[P(0,0,0,1),J(P(0,0,.24,0),A(.24,.5,.44,.5,-90,90),P(.24,1,0,1))],
+    E:[P(0,0,0,1),P(0,0,.55,0),P(0,.5,.48,.5),P(0,1,.55,1)],
+    F:[P(0,0,0,1),P(0,0,.54,0),P(0,.5,.46,.5)],
+    G:[J(A(.32,.5,.32,.5,-45,-330),P(.6,.75,.6,.55),P(.6,.55,.36,.55))],
+    H:[P(0,0,0,1),P(.56,0,.56,1),P(0,.5,.56,.5)],
+    I:[P(.19,0,.19,1),P(0,0,.38,0),P(0,1,.38,1)],                     // chart: stick, then the top bar, then the bottom bar (left to right)
+    J:[J(P(.5,0,.5,.72),A(.25,.72,.25,.28,0,170)),P(.22,0,.64,0)],   // chart: down + hook to the left, then the top bar
+    K:[P(0,0,0,1),P(.52,0,0,.5),P(0,.5,.54,1)],
+    L:[P(0,0,0,1),P(0,1,.46,1)],
+    M:[P(0,0,0,1),P(0,0,.32,.48),P(.32,.48,.63,0),P(.63,0,.63,1)],   // chart: straight stems, the V meets at the midline
+    N:[P(0,0,0,1),P(0,0,.56,1),P(.56,1,.56,0)],
+    O:[A(.4,.5,.4,.5,-90,-450)],
+    P:[P(0,0,0,1),J(P(0,0,.3,0),A(.3,.25,.25,.25,-90,90),P(.3,.5,0,.5))],
+    Q:[A(.4,.5,.4,.5,-90,-450),P(.56,.76,.84,1)],
+    R:[P(0,0,0,1),J(P(0,0,.3,0),A(.3,.25,.25,.25,-90,90),P(.3,.5,0,.5)),P(.22,.5,.58,1)],
+    S:[J(A(.28,.25,.26,.25,-30,-270),A(.28,.75,.28,.25,-90,150))],
+    T:[P(.35,0,.35,1),P(0,0,.7,0)],                                    // chart: bar across the top line
+    U:[J(P(0,0,0,.7),A(.28,.7,.28,.3,180,0),P(.56,.7,.56,0))],
+    V:[P(0,0,.35,1,.7,0)],
+    W:[P(0,0,.25,1,.49,.5,.74,1,.98,0)],                               // chart: the middle peak stops at the midline
+    X:[P(0,0,.56,1),P(.56,0,0,1)],
+    Y:[P(0,0,.31,.5),P(.62,0,.31,.5),P(.31,.5,.31,1)],
+    Z:[P(0,0,.8,0,0,1,.8,1)],
+    a:[A(.25,.75,.25,.25,10,-350),P(.5,.5,.5,1)],                 // v20: ball-and-stick — CCW bowl, then a STRAIGHT stick to the baseline (no curl; Bobby's picture)
+    b:[P(0,0,0,1),bowlR(0)],
+    c:[A(.24,.75,.24,.25,-45,-315)],
+    d:[bowlL(0),P(.5,0,.5,1)],
+    e:[J(P(0,.75,.5,.75),A(.25,.75,.25,.25,0,-315))],
+    f:[J(A(.4,.2,.2,.2,-10,-180),P(.2,.2,.2,1)),P(0,.5,.42,.5)],     // chart: hook over to the right, bar on the midline
+    g:[bowlL(0),J(P(.5,.5,.5,1.25),A(.3,1.25,.2,.17,0,170))],
+    h:[P(0,0,0,1),bump(0,.44,.16)],
+    i:[P(0,.5,0,1),D(0,.28)],
+    j:[J(P(.24,.5,.24,1.25),A(.06,1.25,.18,.17,0,170)),D(.24,.28)],
+    k:[P(0,0,0,1),P(.42,.5,0,.76),P(.1,.7,.44,1)],
+    l:[P(0,0,0,1)],
+    m:[P(0,.5,0,1),bump(0,.34,.15),bump(.34,.34,.15)],
+    n:[P(0,.5,0,1),bump(0,.44,.16)],
+    o:[A(.26,.75,.26,.25,-90,-450)],
+    p:[P(0,.5,0,1.42),bowlR(0)],
+    q:[bowlL(0),J(P(.5,.5,.5,1.20),A(.78,1.20,.28,.22,180,-35))], // v22: chart q — round bowl, straight descender, hook curls up and to the right (open enough to see on a thick practice tile)
+    r:[P(0,.5,0,1),A(.2,.66,.2,.16,180,305)],
+    s:[J(A(.18,.625,.17,.125,-30,-270),A(.18,.875,.18,.125,-90,150))],
+    t:[P(.2,.18,.2,1),P(0,.5,.4,.5)],                                  // chart: shorter stick, bar on the midline
+    u:[J(P(0,.5,0,.76),A(.23,.76,.23,.24,180,0),P(.46,.76,.46,.5)),P(.46,.5,.46,1)],
+    v:[P(0,.5,.23,1,.46,.5)],
+    w:[P(0,.5,.15,1,.3,.5,.45,1,.6,.5)],
+    x:[P(0,.5,.38,1),P(.38,.5,0,1)],
+    y:[P(0,.5,.23,1),P(.46,.5,.037,1.42)],
+    z:[P(0,.5,.44,.5,0,1,.44,1)],
+    // other accepted ways to write a letter (never shown, only matched)
+    "M~":[P(0,0,0,1),P(0,0,.36,1),P(.36,1,.72,0),P(.72,0,.72,1)],      // M whose middle goes down to the line
+    "W~":[P(0,0,.24,1,.475,0,.71,1,.95,0)],                           // W whose middle peak goes up to the top line
+    "G~":[J(A(.32,.5,.32,.5,-45,-360),P(.64,.5,.36,.5))],             // G with just a bar
+    "K~":[P(0,0,0,1),P(.52,0,0,.55),P(.18,.42,.54,1)],                 // K whose leg starts on the arm
+    "t~":[J(P(.2,.18,.2,.86),A(.36,.86,.16,.14,180,90)),P(0,.5,.4,.5)], // t with a curl at the bottom
+    "y~":[P(0,.5,.23,1),J(P(.46,.5,.46,1.25),A(.26,1.25,.2,.17,0,170))], // y with a hooked tail
+    "a~":[bowlL(0),J(P(.5,.5,.5,.92),A(.58,.92,.08,.08,180,90))],      // Dad's chart: ball-and-stick with a little rightward foot (accepted alt)
+  };
+})();
+const ALT={M:["M~"],W:["W~"],G:["G~"],K:["K~"],t:["t~"],y:["y~"],a:["a~"]}; // accepted alternatives (v20: straight q no longer accepted — the curl is required)
+// Paint a letter as a thick manuscript SVG from SHAPES. Practice (#letter via next()) and test tiles (askQuestion) both use setLetterGlyph — not the Comic Sans glyph.
+function glyphSvg(ch,frame){
+  const sh=SHAPES[ch]||SHAPES[ch.toLowerCase()]; if(!sh) return null;
+  let [x0,y0,x1,y1]=shapeBox(sh); let span=Math.max(x1-x0,y1-y0,0.35), sw=span*0.17, pad=sw*0.8;
+  // v23 frame: every letter on the same writing lines at the same scale (cap height 1, descenders to 1.42), so a
+  // lowercase o / s / c is visibly smaller than O / S / C when both cases are on screen together
+  if(frame){ const cx=(x0+x1)/2; sw=0.15; pad=0; x0=cx-0.6; x1=cx+0.6; y0=-0.12; y1=1.52; }
+  let body="";
+  for(const s of sh){
+    if(s.length<2){ body+=`<circle cx="${s[0][0]}" cy="${s[0][1]}" r="${(sw*0.85).toFixed(3)}" fill="currentColor"/>`; continue; }
+    let d=`M${s[0][0].toFixed(3)} ${s[0][1].toFixed(3)}`; for(let i=1;i<s.length;i++) d+=`L${s[i][0].toFixed(3)} ${s[i][1].toFixed(3)}`;
+    body+=`<path d="${d}" fill="none" stroke="currentColor" stroke-width="${sw.toFixed(3)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  return `<svg class="glyph${frame?" fr":""}" viewBox="${(x0-pad).toFixed(3)} ${(y0-pad).toFixed(3)} ${(x1-x0+2*pad).toFixed(3)} ${(y1-y0+2*pad).toFixed(3)}" aria-hidden="true" preserveAspectRatio="xMidYMid meet">${body}</svg>`;
+}
+function setLetterGlyph(node, ch, frame){
+  const svg=glyphSvg(ch,frame);
+  if(svg){ node.innerHTML=svg; node.dataset.ch=ch; node.classList.add("ms"); node.setAttribute("aria-label", ch); }
+  else { node.textContent=ch; node.dataset.ch=ch; node.classList.remove("ms"); node.removeAttribute("aria-label"); }
+}
+const SAME_CASE_OK="copsuvwxyz"; // upper/lower have the same shape: either case is fine
+const ALL52=LETTERS.concat(LETTERS.map(l=>l.toUpperCase()));
+function shapeBox(sh){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; for(const s of sh) for(const [x,y] of s){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } return [x0,y0,x1,y1]; }
+// size the canvases to the stage, place the writing lines, fit the letter onto them
+function layoutDraw(){
+  const dpr=Math.min(window.devicePixelRatio||1,3);
+  dW=Math.max(1,dStage.clientWidth); dH=Math.max(1,dStage.clientHeight); // inside the border: the canvases' real size, so nothing is stretched or cut
+  for(const c of [guideC,inkC,demoC]){ c.width=Math.round(dW*dpr); c.height=Math.round(dH*dpr); }
+  gctx.setTransform(dpr,0,0,dpr,0,0); ictx.setTransform(dpr,0,0,dpr,0,0); mctx.setTransform(dpr,0,0,dpr,0,0);
+  dLine=Math.max(14,Math.min(44,Math.min(dW,dH)*0.055));
+  // writing lines like lined school paper: capital height U; top line, midline, baseline; room below for g j p q y
+  const pad=Math.max(dLine*0.9,dH*0.05), U=Math.max(20,Math.min((dH-2*pad)/1.42, dW*0.8/0.95));
+  const top=Math.round((dH-1.42*U)/2);
+  dLines={U,top,mid:top+U/2,base:top+U};
+  if(!dLetter) return;
+  dGlyph=glyphLayout(dChar());
+}
+// where a letter sits on the writing lines, in stage pixels (centred left/right)
+function glyphLayout(ch){
+  const sh=SHAPES[ch]||SHAPES[ch.toLowerCase()], [x0,,x1]=shapeBox(sh), k=dLines.U, ox=dW/2-(x0+x1)/2*k, oy=dLines.top;
+  const dense=s=>{ const o=[s[0]]; for(let i=1;i<s.length;i++){ const [a,b]=s[i-1], [c,d]=s[i], n=Math.max(1,Math.ceil(Math.hypot(c-a,d-b)/3)); for(let j=1;j<=n;j++) o.push([a+(c-a)*j/n,b+(d-b)*j/n]); } return o; };
+  return {ch, k, paths:sh.map(s=>dense(s.map(([x,y])=>[ox+x*k,oy+y*k])))};
+}
+function glyphPaths(lay){ return (lay||dGlyph).paths; }
+// the writing lines (always) + with Outline ON a dotted letter to trace, like a handwriting worksheet
+function drawGuide(){
+  gctx.clearRect(0,0,dW,dH);
+  if(!dLines) return;
+  const x0=Math.max(8,dW*0.03), x1=dW-x0, lw=Math.max(2,dLine*0.12);
+  gctx.strokeStyle="#8fb3d9"; gctx.lineWidth=lw; gctx.lineCap="butt";
+  for(const y of [dLines.top,dLines.base]){ gctx.beginPath(); gctx.moveTo(x0,y); gctx.lineTo(x1,y); gctx.stroke(); }
+  gctx.setLineDash([lw*5,lw*4]); gctx.beginPath(); gctx.moveTo(x0,dLines.mid); gctx.lineTo(x1,dLines.mid); gctx.stroke(); gctx.setLineDash([]);
+  if(!dOutline||!dGlyph) return;
+  const gap=Math.max(11,dLine*0.62), r=Math.max(3,dLine*0.2);
+  gctx.fillStyle="rgba(0,0,0,.34)";
+  const dot=(x,y)=>{ gctx.beginPath(); gctx.arc(x,y,r,0,Math.PI*2); gctx.fill(); };
+  const placed=[];
+  const near=(x,y)=>placed.some(([a,b])=>(a-x)*(a-x)+(b-y)*(b-y)<gap*gap*0.35);
+  for(const p of glyphPaths()){
+    if(p.length<3){ if(!near(p[0][0],p[0][1])){ gctx.beginPath(); gctx.arc(p[0][0],p[0][1],r*1.8,0,Math.PI*2); gctx.fill(); placed.push(p[0]); } continue; } // the i / j dot
+    let carry=gap; // always start a path with a dot
+    for(let i=0;i<p.length;i++){
+      if(i) carry+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);
+      const last=i===p.length-1;
+      if((carry>=gap||last&&carry>gap*0.5)&&!near(p[i][0],p[i][1])){ dot(p[i][0],p[i][1]); placed.push(p[i]); carry=0; }
+    }
+  }
+}
+function strokePath(ctx,s,lw){
+  ctx.lineWidth=lw; ctx.lineCap="round"; ctx.lineJoin="round";
+  if(s.p.length===1){ ctx.beginPath(); ctx.arc(s.p[0][0],s.p[0][1],lw/2,0,Math.PI*2); ctx.fill(); return; }
+  ctx.beginPath(); ctx.moveTo(s.p[0][0],s.p[0][1]); for(let i=1;i<s.p.length;i++) ctx.lineTo(s.p[i][0],s.p[i][1]); ctx.stroke();
+}
+function redrawInk(){ ictx.clearRect(0,0,dW,dH); for(const s of strokes){ ictx.strokeStyle=ictx.fillStyle=s.c; strokePath(ictx,s,dLine); } }
+function clearInk(){ strokes=[]; dActive.clear(); clearTimeout(dCheckT); dCheckT=null; redrawInk(); }
+function pickDrawLetter(){
+  const bag=[]; LETTERS.forEach(l=>{ if(l!==dPrev){ const n=problems.has(l)?3:1; for(let i=0;i<n;i++) bag.push(l); } });
+  return bag[Math.floor(Math.random()*bag.length)]||"a";
+}
+function drawPrompt(){ if(mode!=="draw"||!dLetter) return;
+  utter([{p:dCase==="upper"?"draw_upper":"draw_lower"},{n:dLetter}]); }
+function nextDraw(){
+  if(mode!=="draw") return;
+  stopDemo(); clearWait(dNextT); dNextT=null; clearWait(dDemoH); dDemoH=null; dPassed=false; dPassedAt=0; dYay.classList.remove("on");
+  dPrev=dLetter; dLetter=pickDrawLetter(); dRetries=0;
+  layoutDraw(); drawGuide(); clearInk(); preloadParts([{p:dCase==="upper"?"draw_upper":"draw_lower"},{n:dLetter},{p:"yes_great_job"},{p:"try_again"}]); drawPrompt();
+}
+function startDraw(){ stopAll(); mode="draw"; show("draw"); syncDrawToggles(); dLetter=null; nextDraw(); }
+function drawStop(){ stopDemo(); clearWait(dNextT); dNextT=null; clearWait(dDemoH); dDemoH=null; clearTimeout(dCheckT); dCheckT=null; dActive.clear(); dPassed=false; dPassedAt=0; dYay.classList.remove("on"); }
+
+// ---------- "show me": the letter writes itself, stroke by stroke, in the right order and direction ----------
+let demoRaf=0, demoT=null, demoOn=false;
+function stopDemo(){ cancelAnimationFrame(demoRaf); demoRaf=0; clearTimeout(demoT); demoT=null; demoOn=false;
+  demoC.style.transition="none"; demoC.style.opacity="1"; mctx.clearRect(0,0,Math.max(dW,1),Math.max(dH,1)); }
+function playDemo(delay){
+  if(mode!=="draw"||!dGlyph||dPassed) return;
+  stopDemo(); demoOn=true;
+  const paths=glyphPaths(), lens=paths.map(p=>{ let L=0; for(let i=1;i<p.length;i++) L+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]); return L; });
+  const total=lens.reduce((a,b)=>a+b,0)||1, pause=180;
+  const T=Math.min(3600,Math.max(2000,1200+450*paths.length))*spd().wait; // ~2-4 s, a bit longer for letters with more strokes
+  const drawMs=Math.max(600,T-pause*(paths.length-1));
+  const dur=paths.map((p,i)=>p.length<2?260:Math.max(260,drawMs*lens[i]/total));
+  const col="#e76f51", lw=Math.max(dLine*1.05,10), sr=Math.max(11,dLine*0.55);
+  const startDot=(p,n)=>{ mctx.fillStyle="#27ae60"; mctx.beginPath(); mctx.arc(p[0],p[1],sr,0,Math.PI*2); mctx.fill();
+    mctx.fillStyle="#fff"; mctx.font="bold "+Math.round(sr*1.25)+"px Arial,sans-serif"; mctx.textAlign="center"; mctx.textBaseline="middle"; mctx.fillText(String(n),p[0],p[1]+1); };
+  let t0=0;
+  const frame=now=>{
+    if(!demoOn) return;
+    if(!t0) t0=now; let t=now-t0;
+    mctx.clearRect(0,0,dW,dH);
+    let head=null;
+    for(let i=0;i<paths.length;i++){
+      const p=paths[i]; if(t<0) break;
+      const f=Math.min(1,t/dur[i]);
+      mctx.strokeStyle=mctx.fillStyle=col; mctx.lineWidth=lw; mctx.lineCap="round"; mctx.lineJoin="round";
+      if(p.length<2){ mctx.beginPath(); mctx.arc(p[0][0],p[0][1],lw*0.6*Math.max(.3,f),0,Math.PI*2); mctx.fill(); if(f<1) head=p[0]; }
+      else { const want=f*lens[i]; let L=0; mctx.beginPath(); mctx.moveTo(p[0][0],p[0][1]); head=p[0];
+        for(let k=1;k<p.length;k++){ const d=Math.hypot(p[k][0]-p[k-1][0],p[k][1]-p[k-1][1]);
+          if(L+d>=want){ const u=d?(want-L)/d:0; head=[p[k-1][0]+(p[k][0]-p[k-1][0])*u,p[k-1][1]+(p[k][1]-p[k-1][1])*u]; mctx.lineTo(head[0],head[1]); break; }
+          L+=d; mctx.lineTo(p[k][0],p[k][1]); head=p[k]; }
+        mctx.stroke(); }
+      t-=dur[i]+pause;
+    }
+    paths.forEach((p,i)=>{ let s=0; for(let j=0;j<i;j++) s+=dur[j]+pause; if(now-t0>=s-120) startDot(p[0],i+1); }); // green numbered start dot shows as each stroke begins
+    const end=dur.reduce((a,b)=>a+b,0)+pause*(paths.length-1);
+    if(head&&now-t0<end){ mctx.fillStyle="#1d3557"; mctx.beginPath(); mctx.arc(head[0],head[1],Math.max(7,lw*0.42),0,Math.PI*2); mctx.fill(); }
+    if(now-t0<end){ demoRaf=requestAnimationFrame(frame); return; }
+    demoRaf=0; // done: hold a moment, then fade away (the outline underneath stays if it is on)
+    demoT=setTimeout(()=>{ if(!demoOn) return; demoC.style.transition="opacity .5s"; demoC.style.opacity="0";
+      demoT=setTimeout(()=>{ if(demoOn) stopDemo(); },520); },450);
+  };
+  demoT=setTimeout(()=>{ demoT=null; if(demoOn) demoRaf=requestAnimationFrame(frame); },delay||0);
+}
+
+// ---------- checking: which letter does the drawing look like? ----------
+// A point-cloud recognizer ($P, Vatavu et al. 2012) against the manuscript strokes above (with a few slanted/stretched
+// copies of each), compared with ALL 52 letters. It ignores stroke order, direction, position and size, so tracing the
+// outline and drawing from memory anywhere are both fine. Accept when the requested letter is the best match (or nearly:
+// when in doubt, accept) and the match is close enough to be a letter at all (scribbles are far from everything).
+const DRAW_RULES={ n:32, maxDist:1.3, margin:0.12, minSize:0.2, maxLen:2.2 }; // tuned with /workspace/lftest/v15/kid.py (synthetic child drawings)
+function cloudOf(strks){ // strokes [{p:[[x,y]..]}] -> n points spread evenly along the ink; tiny strokes (dots) get 2 points each
+  const n=DRAW_RULES.n; let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const s of strks) for(const [x,y] of s.p){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  const size=Math.max(x1-x0,y1-y0,1e-6), lens=strks.map(s=>{ let L=0; for(let i=1;i<s.p.length;i++) L+=Math.hypot(s.p[i][0]-s.p[i-1][0],s.p[i][1]-s.p[i-1][1]); return L; });
+  const dots=[], lines=[]; strks.forEach((s,i)=>(lens[i]<size*0.08?dots:lines).push(i));
+  if(!lines.length) return null;
+  const pts=[]; for(const i of dots){ let cx=0,cy=0; for(const [x,y] of strks[i].p){ cx+=x; cy+=y; } cx/=strks[i].p.length; cy/=strks[i].p.length; pts.push([cx,cy],[cx,cy]); }
+  const m=Math.max(2,n-pts.length), total=lines.reduce((a,i)=>a+lens[i],0), step=total/(m-1||1);
+  let acc=0; // walk all line strokes as one path, dropping a point every `step` (never between strokes)
+  for(const i of lines){ const p=strks[i].p; if(!pts.length||acc===0) pts.push(p[0].slice());
+    for(let k=1;k<p.length;k++){ let [ax,ay]=p[k-1]; const [bx,by]=p[k]; let d=Math.hypot(bx-ax,by-ay);
+      while(acc+d>=step&&d>0){ const u=(step-acc)/d; ax+=u*(bx-ax); ay+=u*(by-ay); pts.push([ax,ay]); d=Math.hypot(bx-ax,by-ay); acc=0; }
+      acc+=d; } }
+  while(pts.length<n) pts.push(strks[lines[lines.length-1]].p.slice(-1)[0].slice());
+  pts.length=n;
+  let cx=0,cy=0; for(const [x,y] of pts){ cx+=x; cy+=y; } cx/=n; cy/=n;
+  return {pts:pts.map(([x,y])=>[(x-cx)/size,(y-cy)/size]), size, len:(total+dots.length*size*0.05)/size};
+}
+function cloudDist(a,b,start){ const n=a.length, used=new Uint8Array(n); let sum=0, i=start;
+  do{ let best=1e9, bi=-1; const [x,y]=a[i]; for(let j=0;j<n;j++){ if(used[j]) continue; const dx=x-b[j][0], dy=y-b[j][1], d=dx*dx+dy*dy; if(d<best){ best=d; bi=j; } }
+    used[bi]=1; sum+=(1-((i-start+n)%n)/n)*Math.sqrt(best); i=(i+1)%n; } while(i!==start);
+  return sum; }
+function cloudMatch(a,b){ const n=a.length, step=Math.floor(Math.sqrt(n)); let m=1e9; for(let i=0;i<n;i+=step) m=Math.min(m,cloudDist(a,b,i),cloudDist(b,a,i)); return m; }
+let TEMPLATES=null; // [{cls, pts}] built once: every shape as written, slanted and stretched a little (children's letters lean and squash)
+function templates(){
+  if(TEMPLATES) return TEMPLATES; TEMPLATES=[];
+  for(const key in SHAPES){ const cls=key.replace("~","");
+    for(const sx of [0.8,1,1.25]) for(const sh of [-0.18,0,0.18]){
+      const c=cloudOf(dropRetrace(SHAPES[key].map(s=>({p:s.map(([x,y])=>[x*sx+sh*(y-.75),y])})))); if(c) TEMPLATES.push({cls,key,pts:c.pts,len:c.len}); } }
+  return TEMPLATES;
+}
+// Completeness (v15): the drawing is fitted onto the letter's box, then EVERY stroke of the letter must be drawn
+// (a letter point counts when ink runs close to it in about the same direction, so a leg can't stand in for a crossbar)
+// and the ink must lie on the letter (no big extra strokes). Checked against each accepted shape, a little slanted either way.
+const COMP={ r:0.16, ang:30*Math.PI/180, minCov:0.7, minInv:0.7 };
+// Outline ON: they must trace the dotted letter - most of the ink near the outline AND most of the outline covered by ink.
+// (Outline OFF: size and position are free.) Distances in letter heights (cap height U).
+const TRACE={ tol:0.2, near:0.7, cov:0.7 };
+function traceFit(strks){ const U=dLines.U, step=U*0.03, tol2=(TRACE.tol*U)**2;
+  const G=orientPts(dGlyph.paths.map(p=>({p})),step,U*0.02), D=orientPts(strks,step,U*0.02);
+  const near=(A,B)=>{ let h=0; for(const q of A){ for(const o of B){ const dx=o.x-q.x, dy=o.y-q.y; if(dx*dx+dy*dy<=tol2){ h++; break; } } } return h/Math.max(1,A.length); };
+  return {near:+near(D,G).toFixed(2), cov:+near(G,D).toFixed(2)}; }
+function orientPts(strks, step, dotLen, shortLen){ const out=[]; shortLen=shortLen||Infinity;
+  strks.forEach(s=>{ const p=s.p; let L=0; for(let i=1;i<p.length;i++) L+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);
+    if(L<dotLen){ let cx=0,cy=0; for(const [x,y] of p){ cx+=x; cy+=y; } out.push({x:cx/p.length,y:cy/p.length,a:null,sh:true}); return; }
+    const r=[p[0].slice()]; let acc=0;
+    for(let k=1;k<p.length;k++){ let [ax,ay]=p[k-1]; const [bx,by]=p[k]; let d=Math.hypot(bx-ax,by-ay);
+      while(acc+d>=step&&d>0){ const u=(step-acc)/d; ax+=u*(bx-ax); ay+=u*(by-ay); r.push([ax,ay]); d=Math.hypot(bx-ax,by-ay); acc=0; } acc+=d; }
+    if(Math.hypot(p[p.length-1][0]-r[r.length-1][0],p[p.length-1][1]-r[r.length-1][1])>step*0.3) r.push(p[p.length-1].slice());
+    for(let k=0;k<r.length;k++){ const q0=r[Math.max(0,k-1)], q1=r[Math.min(r.length-1,k+1)]; let a=Math.atan2(q1[1]-q0[1],q1[0]-q0[0]); if(a<0) a+=Math.PI; if(a>=Math.PI) a-=Math.PI;
+      out.push({x:r[k][0],y:r[k][1],a,sh:L<shortLen}); } });
+  return out; }
+function bboxOf(strks){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; for(const s of strks) for(const [x,y] of s.p){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } return [x0,y0,x1,y1]; }
+function nearOk(P,q,r2,ang){ for(const o of P){ const dx=o.x-q.x, dy=o.y-q.y; if(dx*dx+dy*dy>r2) continue;
+    if(o.a===null||q.a===null){ if((o.a===null&&!q.sh)||(q.a===null&&!o.sh)) continue; return true; } // a dot (i, j) only counts when a dot / short mark is there, not a long stroke passing by
+    let d=Math.abs(o.a-q.a); if(d>Math.PI/2) d=Math.PI-d; if(d<=ang) return true; } return false; }
+// the letter's strokes cut at sharp corners (Z = top bar + diagonal + bottom bar), so each part must be drawn
+function splitCorners(T,Tm){ const out=[];
+  for(const st of T){ const p=st.p; if(p.length<3){ out.push(st); continue; }
+    const parts=[]; let cur=[p[0]];
+    for(let i=1;i<p.length;i++){ cur.push(p[i]);
+      if(i<p.length-1){ const a1=Math.atan2(p[i][1]-p[i-1][1],p[i][0]-p[i-1][0]), a2=Math.atan2(p[i+1][1]-p[i][1],p[i+1][0]-p[i][0]); let t=Math.abs(a2-a1); if(t>Math.PI) t=2*Math.PI-t;
+        if(t>55*Math.PI/180){ parts.push(cur); cur=[p[i]]; } } }
+    parts.push(cur);
+    const len=q=>{ let L=0; for(let i=1;i<q.length;i++) L+=Math.hypot(q[i][0]-q[i-1][0],q[i][1]-q[i-1][1]); return L; };
+    const keep=parts.filter(q=>len(q)>=Tm*0.08); (keep.length?keep:[p]).forEach(q=>out.push({p:q})); }
+  return out; }
+function completeness(strks, keys){
+  const [dx0,dy0,dx1,dy1]=bboxOf(strks), Dw=dx1-dx0, Dh=dy1-dy0, Dm=Math.max(Dw,Dh,1e-6);
+  let best={score:-1,cov:0,inv:0,key:""};
+  for(const key of keys) for(const sh of [-0.18,0,0.18]){
+    const T=SHAPES[key].map(st=>({p:st.map(([x,y])=>[x+sh*(0.5-y),y])})), [tx0,ty0,tx1,ty1]=bboxOf(T), Tw=tx1-tx0, Th=ty1-ty0, Tm=Math.max(Tw,Th);
+    let sx=Tm/Dm, sy=sx;
+    if(Math.min(Tw,Th)>=0.3*Tm&&Math.min(Dw,Dh)>=0.3*Dm){ sx=Tw/Dw; sy=Th/Dh; const g=Math.sqrt(sx*sy), k=Math.min(1.43,Math.max(0.7,sx/sy)); sx=g*Math.sqrt(k); sy=g/Math.sqrt(k); }
+    const tcx=(tx0+tx1)/2, tcy=(ty0+ty1)/2, dcx=(dx0+dx1)/2, dcy=(dy0+dy1)/2;
+    const D=strks.map(st=>({p:st.p.map(([x,y])=>[tcx+(x-dcx)*sx,tcy+(y-dcy)*sy])}));
+    const step=Tm*0.03, r=COMP.r*Tm, r2=r*r, dotLen=Tm*0.08, sl=Tm*0.25, DP=orientPts(D,step,dotLen,sl);
+    let cov=1; for(const st of splitCorners(T,Tm)){ const TP=orientPts([st],step,dotLen,sl); let hit=0; for(const q of TP) if(nearOk(DP,q,q.a===null?r2*2.25:r2,COMP.ang)) hit++; cov=Math.min(cov,hit/TP.length); }
+    const TA=orientPts(T,step,dotLen,sl); let hit=0; for(const q of DP) if(nearOk(TA,q,q.a===null?r2*2.25:r2,COMP.ang)) hit++; const inv=hit/Math.max(1,DP.length);
+    const score=Math.min(cov/COMP.minCov,inv/COMP.minInv); if(score>best.score) best={score,cov:+cov.toFixed(2),inv:+inv.toFixed(2),key};
+  }
+  return best; }
+// Ink that goes back over earlier strokes (a child tracing a part again, or starting over on top) counts once,
+// so re-traced parts don't outweigh the rest of the letter in the point cloud. Same treatment for the templates.
+function dropRetrace(strks){
+  const [x0,y0,x1,y1]=bboxOf(strks), size=Math.max(x1-x0,y1-y0,1e-6), r=size*0.04, r2=r*r, grid=new Map(), out=[];
+  const cellOf=(x,y)=>Math.floor(x/r)+","+Math.floor(y/r);
+  const near=(x,y)=>{ const cx=Math.floor(x/r), cy=Math.floor(y/r); for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++){ const a=grid.get((cx+i)+","+(cy+j)); if(a) for(const [u,v] of a) if((u-x)*(u-x)+(v-y)*(v-y)<=r2) return true; } return false; };
+  const len=p=>{ let L=0; for(let i=1;i<p.length;i++) L+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]); return L; };
+  for(const s of strks){
+    const d=[s.p[0]]; for(let i=1;i<s.p.length;i++){ const [a,b]=s.p[i-1], [c,e]=s.p[i], n=Math.max(1,Math.ceil(Math.hypot(c-a,e-b)/(r*0.5))); for(let k=1;k<=n;k++) d.push([a+(c-a)*k/n,b+(e-b)*k/n]); }
+    const whole=len(d), pieces=[]; let cur=[];
+    for(const q of d){ if(near(q[0],q[1])){ if(cur.length){ pieces.push(cur); cur=[]; } } else cur.push(q); }
+    if(cur.length) pieces.push(cur);
+    for(const pc of pieces) if(whole<size*0.08||len(pc)>=size*0.05) out.push({c:s.c,p:pc}); // keep real dots, drop crumbs
+    for(const q of d){ const k=cellOf(q[0],q[1]); let a=grid.get(k); if(!a) grid.set(k,a=[]); a.push(q); } }
+  return out.length?out:strks; }
+function evalDrawing(outlineOn, strks){
+  strks=strks||strokes;
+  const res={pass:false,dist:9,rival:"",rivalDist:9};
+  if(!dGlyph||!strks.length) return res;
+  const ch=dChar(), ok=[ch,...(ALT[ch]||[]).map(k=>k.replace("~",""))]; if(SAME_CASE_OK.includes(ch.toLowerCase())) ok.push(ch===ch.toUpperCase()?ch.toLowerCase():ch.toUpperCase());
+  const c=cloudOf(dropRetrace(strks));
+  if(!c){ res.tiny=true; return res; }
+  res.size=c.size/dLines.U; if(res.size<DRAW_RULES.minSize){ res.tiny=true; return res; } // a tap or a tiny mark is not a letter
+  const best={}, bestT={};
+  for(const t of templates()){ const d=cloudMatch(c.pts,t.pts); if(!(t.cls in best)||d<best[t.cls]){ best[t.cls]=d; bestT[t.cls]=t; } }
+  let dt=9, rv="", dr=9, tl=1;
+  for(const k in best){ if(ok.includes(k)){ if(best[k]<dt){ dt=best[k]; tl=bestT[k].len; } } else if(best[k]<dr){ dr=best[k]; rv=k; } }
+  res.dist=dt; res.rival=rv; res.rivalDist=dr; res.best=best; res.lenRatio=c.len/tl;
+  // far more ink than the letter needs = colouring in / scribbling
+  const keys=Object.keys(SHAPES).filter(k=>ok.includes(k.replace("~",""))), comp=completeness(strks,keys); res.cov=comp.cov; res.inv=comp.inv;
+  res.complete=comp.cov>=COMP.minCov&&comp.inv>=COMP.minInv; // every stroke there (crossbars, stems, tails, both diagonals), no big extra ink
+  if(outlineOn){ const tf=traceFit(strks); res.near=tf.near; res.gcov=tf.cov; res.traced=tf.near>=TRACE.near&&tf.cov>=TRACE.cov; } else res.traced=true;
+  // a closer look-alike only vetoes a complete letter if it explains the ink about as well (a Q's tail is not part of O)
+  let veto=dt>dr*(1+DRAW_RULES.margin);
+  if(veto&&res.complete){ const rk=Object.keys(SHAPES).filter(k=>k.replace("~","")===rv), rc=completeness(strks,rk); res.rivalInv=rc.inv; if(rc.inv<comp.inv-0.05) veto=false; }
+  res.pass=dt<=DRAW_RULES.maxDist && !veto && res.lenRatio<=DRAW_RULES.maxLen && res.complete && res.traced;
+  if(!res.pass&&veto) res.lookalike=rv;
+  return res;
+}
+function drawSuccess(){
+  stopDemo(); dPassed=true; dPassedAt=Date.now(); dActive.clear(); clearTimeout(dCheckT); dCheckT=null;
+  clearWait(dDemoH); dDemoH=null; dYay.classList.add("on");
+  // next letter once "Yes! Great job!" has been heard (1.7 s minimum as before; capped: nothing can leave us stuck here)
+  clearWait(dNextT); dNextT=afterSaid([{p:"yes_great_job"}],Math.round(1700*spd().wait),nextDraw);
+}
+function checkDrawing(fromDone){
+  if(mode!=="draw"||dPassed||!strokes.length){ if(fromDone&&mode==="draw"&&!dPassed) drawPrompt(); return; }
+  const r=evalDrawing(dOutline); window.__lastEval=r;
+  if(r.pass) return drawSuccess();
+  if(!fromDone) return; // on finger lift we only ever say "yes" - they may still be drawing
+  drawRetry();
+}
+// Done pressed and it isn't the letter: wipe the drawing for them, "Try again", show how it's written, same letter again
+function drawRetry(){
+  dRetries++; clearInk(); drawGuide();
+  // the demo starts once "Try again" has been heard (0.9 s minimum as before), unless they have started drawing
+  const L=dLetter, k=dRetries; clearWait(dDemoH);
+  dDemoH=afterSaid([{p:"try_again"}],900,()=>{ dDemoH=null; if(mode==="draw"&&dLetter===L&&dRetries===k&&!dPassed&&!strokes.length&&!demoOn) playDemo(0); });
+}
+// --- finger / mouse drawing ---
+function stagePt(e){ const r=inkC.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
+function beginStroke(key,pt){ if(mode!=="draw"||dPassed) return; if(demoOn) stopDemo(); clearWait(dDemoH); dDemoH=null; clearTimeout(dCheckT); dCheckT=null; // touching the canvas stops the demo: their turn
+  const s={c:INK[inkN++%INK.length],p:[pt]}; strokes.push(s); dActive.set(key,s); ictx.fillStyle=s.c; strokePath(ictx,s,dLine); }
+function moveStroke(key,pt){ const s=dActive.get(key); if(!s) return; const l=s.p[s.p.length-1];
+  if(Math.abs(pt[0]-l[0])+Math.abs(pt[1]-l[1])<2) return; s.p.push(pt);
+  ictx.strokeStyle=s.c; ictx.lineWidth=dLine; ictx.lineCap="round"; ictx.lineJoin="round";
+  ictx.beginPath(); ictx.moveTo(l[0],l[1]); ictx.lineTo(pt[0],pt[1]); ictx.stroke(); }
+function endStroke(key){ if(!dActive.delete(key)) return; if(!dActive.size){ clearTimeout(dCheckT); dCheckT=setTimeout(()=>{ dCheckT=null; safe(checkDrawing,false); },250); } }
+inkC.addEventListener("touchstart",e=>{ if(e.cancelable) e.preventDefault(); for(const t of e.changedTouches) beginStroke(t.identifier,stagePt(t)); },{passive:false});
+inkC.addEventListener("touchmove",e=>{ if(e.cancelable) e.preventDefault(); for(const t of e.changedTouches) moveStroke(t.identifier,stagePt(t)); },{passive:false});
+inkC.addEventListener("touchend",e=>{ if(e.cancelable) e.preventDefault(); for(const t of e.changedTouches) endStroke(t.identifier); },{passive:false});
+inkC.addEventListener("touchcancel",e=>{ for(const t of e.changedTouches) endStroke(t.identifier); },{passive:false});
+inkC.addEventListener("mousedown",e=>{ e.preventDefault(); beginStroke("m",stagePt(e)); });
+window.addEventListener("mousemove",e=>{ if(dActive.has("m")) moveStroke("m",stagePt(e)); });
+window.addEventListener("mouseup",()=>endStroke("m"));
+inkC.addEventListener("contextmenu",e=>e.preventDefault());
+onTap(document.getElementById("dClear"),()=>{ stopDemo(); if(!dPassed) clearInk(); });
+onTap(document.getElementById("dSay"),drawPrompt);
+onTap(document.getElementById("dShow"),()=>{ if(!dPassed) playDemo(0); }); // plays over their drawing, then fades away
+onTap(document.getElementById("dDone"),()=>{ stopDemo(); checkDrawing(true); });
+onTap(document.getElementById("dSkip"),nextDraw);
+onTap(document.getElementById("dCase"),()=>{ dCase=dCase==="upper"?"lower":"upper"; lsSet(DCASE_KEY,dCase); syncDrawToggles();
+  if(mode==="draw"&&!dPassed){ stopDemo(); layoutDraw(); drawGuide(); clearInk(); drawPrompt(); } });
+onTap(document.getElementById("dOutline"),()=>{ dOutline=!dOutline; lsSet(DOUT_KEY,dOutline); syncDrawToggles(); drawGuide(); });
+let resizeT=null;
+function stageCheck(){ if(mode==="draw"&&!dPassed&&dStage.clientWidth&&(dStage.clientWidth!==dW||dStage.clientHeight!==dH)){ stopDemo(); layoutDraw(); drawGuide(); clearInk(); } } // only if the stage really changed size
+window.addEventListener("resize",()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>{ if(mode==="test") layoutChoices(); if(mode==="practice") fitPractice(); if(mode==="pick") layoutPicker(); stageCheck(); },150); });
+if(window.ResizeObserver){ const ro=new ResizeObserver(()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>{ if(mode==="test") layoutChoices(); if(mode==="practice") fitPractice(); stageCheck(); },150); }); for(const id of ["dStage","letterBox","choices"]) ro.observe(document.getElementById(id)); }
+
+// ---------- safety nets ----------
+// If a timer got lost (e.g. iOS suspended the app mid-celebration or mid-answer), recover instead of staying stuck.
+setInterval(()=>safe(()=>{
+  // (v19: above the longest feedback wait - a clip may start up to 2.5 s late, then plays at 0.75x, + 1.5 s cap)
+  if(celebrating()&&celebrateAt&&Date.now()-celebrateAt>9000) endCelebration(true);
+  if(mode==="test"&&tBusy&&tBusyAt&&Date.now()-tBusyAt>9000){ clearWait(tNextT); tNextT=null; if(tAfterRight){ tAfterRight=false; advance(); } else { tBusy=false; tBusyAt=0; } }
+  if(mode==="draw"&&dPassed&&dPassedAt&&Date.now()-dPassedAt>8000) nextDraw();
+}),1000);
+// iOS: speech/audio are often wedged after the app is backgrounded (home-screen app resumed later). Reset them.
+function onResume(){ safe(()=>{ if(synth){ synth.cancel(); if(synth.paused) synth.resume(); } lastUtter=null; stopClip(); stopVoice(); }); }
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) safe(quiet); else onResume(); });
+window.addEventListener("pageshow",onResume);
+
+openWho(); // v23: every launch starts at "Who's playing?"
+// offline sound cache: every voice's clips, the selected voice first (sent again when the voice changes, so it jumps the queue)
+function audioList(){ const cur=curVoice(); return [].concat(voiceFiles(cur),...VOICES.filter(v=>v!==cur).map(voiceFiles)).filter((f,i,a)=>a.indexOf(f)===i); }
+let swReady=false;
+function cacheVoices(){ if(!swReady) return; safe(()=>{ const w=navigator.serviceWorker.controller; if(w) w.postMessage({type:"cache-voices",files:audioList()}); }); }
+// v17: the service worker is registered after the page has loaded, and it fills the offline sound cache in the
+// background a few seconds later, so neither ever slows down opening the app or the first sounds.
+if("serviceWorker" in navigator) safe(()=>{
+  const go=()=>safe(()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+    navigator.serviceWorker.ready.then(reg=>{ setTimeout(()=>safe(()=>{ if(reg.update) reg.update().catch(()=>{}); /* look for a new version on every launch */ swReady=true; const w=reg.active||navigator.serviceWorker.controller; if(w) w.postMessage({type:"cache-voices",files:audioList()}); }),3000); }).catch(()=>{});
+  });
+  if(document.readyState==="complete") go(); else window.addEventListener("load",go);
+});
+</script>
+</body>
+</html>
