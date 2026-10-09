@@ -9,7 +9,7 @@ set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); REPO=$(cd "$HERE/../.." && pwd)
 FB="npx --yes firebase-tools@15"
 SEC=/workspace/secrets/letter-fun-sync.env; mkdir -p /workspace/secrets; chmod 700 /workspace/secrets; touch "$SEC"; chmod 600 "$SEC"
-get(){ grep -s "^$1=" "$SEC" | tail -1 | cut -d= -f2-; }
+get(){ { grep -s "^$1=" "$SEC" || true; } | tail -1 | cut -d= -f2-; }
 put(){ grep -v "^$1=" "$SEC" > "$SEC.tmp" || true; echo "$1=$2" >> "$SEC.tmp"; mv "$SEC.tmp" "$SEC"; chmod 600 "$SEC"; }
 cd "$HERE"
 if ! $FB login:list 2>/dev/null | grep -qi "logged in as"; then

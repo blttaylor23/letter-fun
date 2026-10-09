@@ -1,4 +1,3 @@
-// v25: family cloud sync settings. null = sync is OFF (the app works exactly as before, nothing leaves the device).
-// Filled in by tools/sync/setup.sh after the one-time Firebase sign-in: {apiKey, db, fam}. The apiKey is a public
-// Firebase web key (not a secret); access is controlled by database.rules.json + the family sync password.
-window.LF_SYNC_CONFIG=null;
+// v25: family cloud sync settings (written by tools/sync/setup.sh). The apiKey is Firebase's public web identifier, not a
+// secret; reads/writes are allowed only for devices linked with the family sync password (see tools/sync/database.rules.json).
+window.LF_SYNC_CONFIG={apiKey:"AIzaSyDALXeK0juiVeO6i7cmu9g7c3zMrShNGcg",db:"https://letter-fun-default-rtdb.firebaseio.com",fam:"fam-8594e258ceada8d1bc213954"};
