@@ -13,13 +13,12 @@ get(){ grep -s "^$1=" "$SEC" | tail -1 | cut -d= -f2-; }
 put(){ grep -v "^$1=" "$SEC" > "$SEC.tmp" || true; echo "$1=$2" >> "$SEC.tmp"; mv "$SEC.tmp" "$SEC"; chmod 600 "$SEC"; }
 cd "$HERE"
 if ! $FB login:list 2>/dev/null | grep -qi "logged in as"; then
-  echo ">>> Sign in with Google in the browser window that opens (answer the usage-statistics question either way)."
-  $FB login
+  echo ">>> Not logged in: run  npx --yes firebase-tools@15 login --no-localhost  , open the URL on your own device, then feed_code.sh"; exit 1
 fi
 PROJECT=${PROJECT:-$(get PROJECT)}; [ -n "$PROJECT" ] || PROJECT="letter-fun-$(openssl rand -hex 3)"; put PROJECT "$PROJECT"
 if ! $FB projects:list --json 2>/dev/null | grep -q "\"$PROJECT\""; then
   echo ">>> creating Firebase project $PROJECT"
-  $FB projects:create "$PROJECT" --display-name "Letter Fun" || { echo "!!! Project creation failed. If this Google account has never used Firebase, open https://console.firebase.google.com once in the box browser, accept the terms, then re-run this script."; exit 1; }
+  $FB projects:create "$PROJECT" --display-name "Letter Fun" || { echo "!!! Project creation failed. If this Google account has never used Firebase, open https://console.firebase.google.com once on your own device (same Google account), accept the terms, then re-run this script."; exit 1; }
 fi
 INST="$PROJECT-default-rtdb"
 if ! $FB database:instances:list --project "$PROJECT" 2>/dev/null | grep -q "$INST"; then
