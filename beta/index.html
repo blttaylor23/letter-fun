@@ -454,7 +454,7 @@ function playSound(l){
 // then add one entry here. (The service worker also caches every voice listed here for offline use.)
 // lacks: phrases this voice didn't record; the Computer says those (never another grown-up's voice).
 const VOICES=[
-  {id:"dad", label:"Dad", dir:ROOT+"voices/dad2/", joined:true, lacks:["draw_number"], own:{correct:"voices/dad2/phrases/correct.mp3"}}, // v24: own = clips that live next to this page (beta/voices/...): Dad's "Yup!" for every correct answer.
+  {id:"dad", label:"Dad", dir:ROOT+"voices/dad2/", joined:true, lacks:["draw_number"], own:{correct:"voices/dad2/phrases/correct.mp3"}}, // v24: own = clips that live next to this page (voices/... beside index.html; the beta has its own copy): Dad's "Yup!" for every correct answer.
   // v24: no "Draw the number" clip yet (the Computer says that part, Dad says the number). joined: has prompts/<phrase>_<letter>.mp3. v23 beta: Dad's new recordings (voices/dad2: letters, numbers 1-20, "How many fingers?"); the live v22 keeps voices/dad until the beta is promoted
   {id:"mom", label:"Mom", dir:ROOT+"voices/mom/", joined:true, lacks:["speed_slow","speed_normal","speed_fast","new_record","high_score","draw_number","correct"]}, // Mom keeps her "Yes!"
   {id:"computer", label:"Computer", dir:null},

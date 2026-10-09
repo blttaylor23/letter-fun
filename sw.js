@@ -1,18 +1,23 @@
-const C="letter-fun-v22";            // app shell (index.html, icons ...): replaced on every release
+// v24 (live since the promotion): the same file serves the live app (/) and the beta copy (/beta/). The beta has its own
+// scope and its own shell cache, never deletes the live app's caches, and shares the clip cache (both play ../voices files).
+const BETA=/\/beta\/sw\.js$/.test(location.pathname), ROOT=BETA?"../":"";
+const C=BETA?"letter-fun-beta-v24":"letter-fun-v24"; // app shell (index.html, icons ...): replaced on every release
 const A="letter-fun-audio-2";        // recorded clips: kept across releases (bump only when clips change), filled lazily
 const L="abcdefghijklmnopqrstuvwxyz".split("");
-const VOICE_DIRS=["voices/dad/"];   // safety net only: the page sends the full list (every voice, the selected one first)
-const PHRASE_FILES=["find","draw","draw_upper","draw_lower","yes","try_again","yes_great_job","keep_going","oops","all_green","speed_slow","speed_normal","speed_fast","nope_a","nope_an"];
-const CORE=["./","index.html","manifest.json","icon-192.png","icon-512.png","icon-180.png"];
+const VOICE_DIRS=[ROOT+"voices/dad2/"]; // v24: Dad = voices/dad2 (live + beta)   // safety net only: the page sends the full list (every voice, the selected one first)
+const PHRASE_FILES=["find","draw","draw_upper","draw_lower","yes","try_again","yes_great_job","keep_going","oops","all_green","speed_slow","speed_normal","speed_fast","nope_a","nope_an","find_number","how_many_fingers","new_record","high_score"];
+const CORE=["./","index.html","art.js","manifest.json","icon-192.png","icon-512.png","icon-180.png"]; // v24: art.js = poster digits + cartoon hands
 const JOINED=["find","draw_upper","draw_lower","nope_a","nope_an"];
-const MEDIA=L.map(l=>"sounds/"+l+".mp3").concat(...VOICE_DIRS.map(d=>L.map(l=>d+"names/"+l+".mp3").concat(L.map(l=>d+"sounds/"+l+".mp3"),PHRASE_FILES.map(p=>d+"phrases/"+p+".mp3"),...JOINED.map(p=>L.map(l=>d+"prompts/"+p+"_"+l+".mp3")))));
-// v22 + beta guard: the preview in /beta/ (its own worker and caches) is left alone by this worker
+const MEDIA=L.map(l=>ROOT+"sounds/"+l+".mp3").concat(...VOICE_DIRS.map(d=>L.map(l=>d+"names/"+l+".mp3").concat(L.map(l=>d+"sounds/"+l+".mp3"),PHRASE_FILES.map(p=>d+"phrases/"+p+".mp3"),...JOINED.map(p=>L.map(l=>d+"prompts/"+p+"_"+l+".mp3")))));
+const MEDIA_OWN=["voices/dad2/phrases/correct.mp3"]; // v24: Dad's "Yup!", next to the page (live: /voices/dad2/..., beta copy: /beta/voices/dad2/...)
 const BETA_PATH=new URL("beta/",self.registration.scope).pathname;
 const fresh=f=>new Request(f,{cache:"reload"});
 // v17: install caches ONLY the small app shell, so a new version is ready in a second or two. (v16 downloaded ~175
 // clips all at once here, which on a slow connection held up the first launch and starved the sounds the page needed.)
-self.addEventListener("install",e=>{ self.skipWaiting(); e.waitUntil(caches.open(C).then(c=>c.addAll(CORE.map(fresh)))); });
-self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==A&&!x.startsWith("letter-fun-beta-")).map(x=>caches.delete(x)))).then(()=>self.clients.claim())); });
+self.addEventListener("install",e=>{ self.skipWaiting(); e.waitUntil(Promise.all([caches.open(C).then(c=>c.addAll(CORE.map(fresh))),
+  caches.open(A).then(c=>Promise.all(MEDIA_OWN.map(f=>fetch(fresh(f)).then(r=>{ if(r.status===200) return c.put(f,r); })))).then(loadKnown).catch(()=>{})])); }); // v24: + Dad's tiny "Yup!" clip, so it is offline from the first launch
+const MINE=x=>BETA?x.startsWith("letter-fun-beta-"):!x.startsWith("letter-fun-beta-"); // each one only clears its own old caches
+self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==A&&MINE(x)).map(x=>caches.delete(x)))).then(()=>self.clients.claim())); });
 // Clips are cached in the background, a few at a time, after the page has loaded (the page sends the list).
 // which clips are in the audio cache (so a fetch can decide right away whether to answer or let the browser load it)
 let known=null;
@@ -33,8 +38,8 @@ function fillAudio(files){
 }
 self.addEventListener("message",e=>{
   const d=e.data||{}; if(d.type!=="cache-voices"||!Array.isArray(d.files)) return;
-  const ok=f=>typeof f==="string"&&(/^voices\/[\w-]+\/(names|sounds|phrases|prompts)\/[\w-]+\.mp3$/.test(f)||/^sounds\/[a-z]\.mp3$/.test(f));
-  e.waitUntil(fillAudio(d.files.filter(ok).concat(MEDIA).filter((f,i,a)=>a.indexOf(f)===i).slice(0,800)));
+  const ok=f=>typeof f==="string"&&(/^(\.\.\/)?voices\/[\w-]+\/(names|sounds|phrases|prompts|numbers|math)\/[\w-]+\.mp3$/.test(f)||/^(\.\.\/)?sounds\/[a-z]\.mp3$/.test(f));
+  e.waitUntil(fillAudio(d.files.filter(ok).concat(MEDIA_OWN,MEDIA).filter((f,i,a)=>a.indexOf(f)===i).slice(0,1000)));
 });
 // A cached clip, answered the way iOS Safari needs: it asks for byte ranges and must get a 206 with Content-Range.
 async function fromAudioCache(req){
@@ -50,7 +55,7 @@ self.addEventListener("fetch",e=>{
   const req=e.request; if(req.method!=="GET") return;
   const url=new URL(req.url); if(url.origin!==location.origin) return;
   const path=url.pathname;
-  if(path.startsWith(BETA_PATH)) return;
+  if(!BETA&&path.startsWith(BETA_PATH)) return; // the preview in /beta/ is never answered by the live app's worker
   // audio: cached copy if we have it; a clip we know isn't cached yet is NOT intercepted - the browser loads it natively (proper range requests)
   if(/\.mp3$/.test(path)){
     if(!known||known.has(path)) e.respondWith(fromAudioCache(req).then(r=>r||fetch(req)).catch(()=>fetch(req)));
