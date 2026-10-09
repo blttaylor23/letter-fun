@@ -194,14 +194,14 @@
   button#switchP small{display:block;font-size:14px;line-height:1.1;opacity:.9;white-space:nowrap}
   #pBtns2{display:flex;gap:2.4vmin;flex:none;flex-wrap:wrap;justify-content:center}
   #pPlayers{background:#2a9d8f}#pStats{background:#3a86ff}#pProgress{background:#8e44ad}
-  #players,#stats,#progress{align-items:center;gap:1.8vmin;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(3vmin + var(--sat)) calc(3vmin + var(--sar)) calc(3vmin + var(--sab)) calc(3vmin + var(--sal))}
-  #players h2,#stats h2,#progress h2{margin:0;font-size:min(8vw,6vh,52px);color:#2a9d8f;flex:none;text-align:center}
+  #players,#stats,#progress,#sync{align-items:center;gap:1.8vmin;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(3vmin + var(--sat)) calc(3vmin + var(--sar)) calc(3vmin + var(--sab)) calc(3vmin + var(--sal))}
+  #players h2,#stats h2,#progress h2,#sync h2{margin:0;font-size:min(8vw,6vh,52px);color:#2a9d8f;flex:none;text-align:center}
   #progress h2{color:#8e44ad}
-  #players .hint,#stats .hint,#progress .hint{margin:0;font-size:min(4.2vw,2.6vh,22px);color:#777;text-align:center;flex:none}
+  #players .hint,#stats .hint,#progress .hint,#sync .hint{margin:0;font-size:min(4.2vw,2.6vh,22px);color:#777;text-align:center;flex:none}
   #plList{display:flex;flex-direction:column;gap:1.4vmin;flex:none}
   input.plIn,#plNew{flex:1;min-width:0;font-size:max(16px,min(4.8vw,3vh,28px));font-family:inherit;padding:.4em .5em;border:.4vmin solid #e0d6c2;border-radius:1.5vmin;-webkit-user-select:text;user-select:text;background:#fffdf7;color:#333}
   button.rs.ok{background:#2ecc71}button.rs.ren{background:#3a86ff}
-  #plDone,#stDone,#pgDone{flex:none;width:min(60vw,320px);height:min(10vh,96px);min-height:56px;font-size:min(6vw,4.5vh,44px);font-family:inherit;font-weight:bold;background:#2ecc71}
+  #plDone,#stDone,#pgDone,#syDone{flex:none;width:min(60vw,320px);height:min(10vh,96px);min-height:56px;font-size:min(6vw,4.5vh,44px);font-family:inherit;font-weight:bold;background:#2ecc71}
   #stList,#pgList{display:flex;flex-direction:column;gap:2vmin;flex:none;width:min(94vw,760px)}
   .stCard{background:#fff;border:.4vmin solid #e0d6c2;border-radius:2vmin;padding:1.4vmin 2vmin}
   .stHead{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4em 1.2em;font-size:min(4.6vw,3vh,26px);color:#555}
@@ -212,6 +212,7 @@
   .pgG svg.glyph{width:1.9em;height:1.9em;display:inline-block;vertical-align:middle;color:#d81b60}.pgC .pgG svg.glyph{width:1.4em;height:1.4em}
   .pgN{font-weight:bold;font-size:1.3em;color:#d81b60}.pgC .pgN{font-size:1.05em}
   .pgR{color:#27ae60;white-space:nowrap}.pgW{color:#e74c3c;white-space:nowrap}.pgP{white-space:nowrap;font-weight:bold}.pgC{color:#777;font-size:.9em}
+  #sync h2{color:#e76f51}#syMsg.hint{color:#d81b60}#sync .hint{max-width:min(92vw,760px)}#sync input{font:inherit;font-size:max(17px,2.6vmin);padding:.5em .7em;border-radius:12px;border:2px solid #ccc;min-width:0;width:min(80vw,420px)}#syLink,#syBtns{display:flex;flex-wrap:wrap;gap:2vmin;justify-content:center;flex:none}#syLink.off,#syBtns .off,#syPw2.off{display:none}#syMsg{min-height:1.4em;color:#d81b60}
   #pgUse{background:#d81b60;white-space:normal;height:auto;min-height:48px;padding:.3em .8em;max-width:min(94vw,760px)}#pgReset{background:#999}
   #whoAdd{background:#2a9d8f;flex:none}#whoForm{display:none}#whoForm.on{display:flex}
   #keypad{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);align-items:center;justify-content:center}#keypad.on{display:flex}
@@ -287,14 +288,14 @@
 </div>
 <div id="players" class="screen scroll">
   <h2>👤 Players</h2>
-  <p class="hint">Each player has their own high scores, Problem Letters, progress and play time, saved on this device only</p>
+  <p class="hint">Each player has their own high scores, Problem Letters, progress and play time, saved on this device (and shared with the family's other devices once ☁️ Family sync links it)</p>
   <div id="plList"></div>
   <div class="hsRow"><input id="plNew" maxlength="20" placeholder="New player's name" autocomplete="off" autocapitalize="words"><button id="plAdd" class="rs ok">Add</button></div>
   <button id="plDone" class="big">Done</button>
 </div>
 <div id="stats" class="screen scroll">
   <h2>📊 Stats</h2>
-  <p class="hint">Play time counts while a game or menu is on screen (paused when the app is hidden or nobody has touched it for 2 minutes). Saved on this device only.</p>
+  <p class="hint">Play time counts while a game or menu is on screen (paused when the app is hidden or nobody has touched it for 2 minutes). Saved on this device; with ☁️ Family sync on, it includes play on the family's other linked devices.</p>
   <div id="stList"></div>
   <button id="stProg" class="rs" style="background:#8e44ad">📈 Progress: worst letters and numbers</button>
   <button id="stDone" class="big">Done</button>
@@ -308,6 +309,14 @@
   <button id="pgReset" class="rs">Reset this player's progress</button>
   <button id="pgDone" class="big">Done</button>
 </div>
+<div id="sync" class="screen scroll">
+  <h2>☁️ Family sync</h2>
+  <p class="hint" id="syState"></p>
+  <div id="syLink"><input id="syPw" type="password" maxlength="64" placeholder="Family sync password" autocomplete="off" autocapitalize="off"><input id="syPw2" type="password" maxlength="64" placeholder="Type it again" autocomplete="off" autocapitalize="off"><button id="syGo" class="rs ok">Link this device</button></div>
+  <p class="hint" id="syMsg"></p>
+  <div id="syBtns"><button id="syNow" class="rs ok">🔄 Sync now</button><button id="syParent" class="rs" style="background:#3a86ff">📊 Parent dashboard</button><button id="syUnlink" class="rs rm">Unlink this device</button></div>
+  <button id="syDone" class="big">Done</button>
+</div>
 <div id="settings" class="screen">
   <h2>Extra practice letters</h2>
   <p class="hint">Tap letters to see them more often in Practice, Tests and Draw</p>
@@ -317,7 +326,7 @@
     <div id="wRow"><span>Voice:</span></div>
     <div id="vRow"><span>Voice speed:</span><button class="vs" data-v="slow">🐢 Slow</button><button class="vs" data-v="normal">Normal</button><button class="vs" data-v="fast">🐇 Fast</button></div>
   </div>
-  <div id="pBtns2"><button id="pPlayers" class="rs">👤 Players</button><button id="pStats" class="rs">📊 Stats</button><button id="pProgress" class="rs">📈 Progress</button></div>
+  <div id="pBtns2"><button id="pPlayers" class="rs">👤 Players</button><button id="pStats" class="rs">📊 Stats</button><button id="pProgress" class="rs">📈 Progress</button><button id="pSync" class="rs">☁️ Family sync</button></div>
   <div id="pBtns">
     <button id="pClear" class="big">Clear all</button>
     <button id="pScores" class="big">⭐ Scores</button>
@@ -360,6 +369,8 @@
 </div>
 <div id="done">🎉 All green! 🎉</div>
 <script src="art.js"></script>
+<script src="sync-config.js"></script>
+<script src="sync.js"></script>
 <script>
 // letter name (speech), then its phonics sound (recorded clip in sounds/)
 const LETTERS="abcdefghijklmnopqrstuvwxyz".split("");
@@ -368,15 +379,18 @@ const ROOT=/\/beta\//.test(location.pathname)?"../":"";
 function safe(fn,...a){ try{ return fn(...a); }catch(e){ try{console.error(e);}catch(_){} } }
 function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v); }catch(e){ return d; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
-// ---------- v23: players (kept on this device only, in localStorage; no cloud sync) ----------
+// ---------- v23: players (kept in localStorage; v25: optionally shared by Family sync, see below) ----------
 // lf-players [{id,name}], lf-player = who is playing. Per player: lf-best:<id>, lf-problem4:<id>, lf-time:<id>.
 const PLAYERS_KEY="lf-players", CUR_KEY="lf-player";
 function loadPlayers(){ const a=lsGet(PLAYERS_KEY,null);
   if(Array.isArray(a)){ const ok=a.filter((p,i)=>p&&typeof p.id==="string"&&typeof p.name==="string"&&p.name.trim()&&a.findIndex(q=>q&&q.id===p.id)===i); if(ok.length) return ok; }
   const d=[{id:"p1",name:"Blakeli"},{id:"p2",name:"Little Bobby"}]; lsSet(PLAYERS_KEY,d); return d; }
+// v25: every player also gets u (a random id that is unique across devices, used by Family sync) and c (created / first seen)
+function rid(){ try{ const a=new Uint8Array(12); crypto.getRandomValues(a); return [...a].map(x=>x.toString(16).padStart(2,"0")).join(""); }catch(e){ return Date.now().toString(36)+Math.random().toString(36).slice(2,12); } }
+function fixPlayers(a){ let ch=false; for(const p of a){ if(typeof p.u!=="string"||!p.u){ p.u=rid(); ch=true; } if(!(+p.c>0)){ p.c=Date.now(); ch=true; } } if(ch) lsSet(PLAYERS_KEY,a); return a; }
 // Blakeli (p1) and Little Bobby (p2) are permanent: they can be renamed but never deleted
 function permanent(id){ return id==="p1"||id==="p2"; }
-let players=loadPlayers();
+let players=fixPlayers(loadPlayers());
 let curPlayer=players.some(p=>p.id===lsGet(CUR_KEY,""))?lsGet(CUR_KEY,""):players[0].id;
 function playerName(id){ const p=players.find(p=>p.id===(id||curPlayer)); return p?p.name:""; }
 function pkey(k,id){ return k+":"+(id||curPlayer); }
@@ -709,7 +723,9 @@ document.addEventListener("dblclick",e=>e.preventDefault());
 document.addEventListener("gesturestart",e=>e.preventDefault());
 // ---------- screens / modes ----------
 let mode="home";
-function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));}
+let curScreen="";
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));
+  const wasGame=/^(test|draw|wrap)$/.test(curScreen); curScreen=id; if(wasGame&&!/^(test|draw|wrap)$/.test(id)) safe(()=>syncSoon(1200)); } // v25: a game ended -> sync
 function stopAll(){
   quiet(); clearWait(tNextT); tNextT=null; tBusy=false; tBusyAt=0; tAfterRight=false;
   endCelebration(false); resetGreen(); resetRed();
@@ -742,7 +758,7 @@ const GAMES={upper:{label:"Uppercase Test",menu:"abc"}, lower:{label:"Lowercase 
   num:{label:"Find the Number",menu:"nums"}, fingers:{label:"Count the Fingers",menu:"nums"},
   drawnum:{label:"Draw the Number",menu:"nums"}, drawnum_free:{label:"Draw the Number (no guide)",menu:"nums"}}; // v24: Draw the Number keeps its own high score with the guide on / off
 // per player: lf-best:<player id>
-function loadBest(id){ const o=lsGet(pkey("lf-best",id),{}), r={}; for(const g in GAMES){ const v=o&&typeof o==="object"?+o[g]:0; r[g]=v>0&&isFinite(v)?Math.floor(v):0; } return r; }
+function loadBest(id){ const o=lsGet(pkey("lf-best",id),{}), rb=(lsGet(pkey("lf-remote",id),null)||{}).best||{}, r={}; for(const g in GAMES){ const v=Math.max(o&&typeof o==="object"?+o[g]||0:0,+rb[g]||0); r[g]=v>0&&isFinite(v)?Math.floor(v):0; } return r; } // v25: + the best on other linked devices
 let best=loadBest();
 function saveBest(){ lsSet(pkey("lf-best"),best); }
 let game="upper", tCase="upper";
@@ -1109,10 +1125,14 @@ function twoTap(b,fn){ let t=null;
 const hsList=document.getElementById("hsList");
 for(const g in GAMES){ const r=document.createElement("div"); r.className="hsRow"; r.dataset.g=g;
   r.innerHTML='<span class="lbl"></span><span class="val"></span><button class="rs">Reset</button>'; r.querySelector(".lbl").textContent=GAMES[g].label;
-  hsList.appendChild(r); twoTap(r.querySelector("button"),()=>{ best[g]=0; saveBest(); renderScores(); }); }
+  hsList.appendChild(r); twoTap(r.querySelector("button"),()=>{ resetBest(curPlayer,[g]); renderScores(); }); }
 hsList.style.cssText="display:flex;flex-direction:column;gap:1.4vmin;flex:none";
-twoTap(document.getElementById("hsAll"),()=>{ for(const g in best) best[g]=0; saveBest(); renderScores(); });
-twoTap(document.getElementById("hsEvery"),()=>{ for(const p of players) try{ localStorage.removeItem(pkey("lf-best",p.id)); }catch(e){} best=loadBest(); renderScores(); });
+twoTap(document.getElementById("hsAll"),()=>{ resetBest(curPlayer,Object.keys(GAMES)); renderScores(); });
+twoTap(document.getElementById("hsEvery"),()=>{ for(const p of players) resetBest(p.id,Object.keys(GAMES)); renderScores(); });
+// v25: a reset is time-stamped so it reaches the other linked devices too (their older scores stop counting)
+function resetBest(id,games){ const t=Date.now(), m=metaGet(id), o=lsGet(pkey("lf-best",id),{})||{}, rm=lsGet(pkey("lf-remote",id),null);
+  m.br=m.br||{}; for(const g of games){ m.br[g]=t; o[g]=0; if(rm&&rm.best) rm.best[g]=0; if(id===curPlayer) best[g]=0; }
+  metaSet(id,m); lsSet(pkey("lf-best",id),o); if(rm) lsSet(pkey("lf-remote",id),rm); syncSoon(); }
 twoTap(document.getElementById("plClear"),()=>{ try{ localStorage.removeItem(pickKey()); }catch(e){} pick=[]; pLetters=[]; renderScores(); });
 function renderScores(){
   document.getElementById("scName").textContent=playerName(); document.querySelectorAll("#scores .nm").forEach(e=>e.textContent=playerName());
@@ -1147,7 +1167,7 @@ function renderPlayers(){
   players.forEach((p,i)=>{ const r=document.createElement("div"); r.className="hsRow"; r.dataset.id=p.id;
     if(plEditing===p.id){ const inp=document.createElement("input"); inp.className="plIn"; inp.maxLength=20; inp.value=p.name; r.appendChild(inp);
       const sv=document.createElement("button"); sv.className="rs ok"; sv.textContent="Save"; r.appendChild(sv);
-      const go=()=>{ const n=cleanName(inp.value); if(n){ p.name=n; savePlayers(); } plEditing=null; renderPlayers(); renderPlayerBits(); };
+      const go=()=>{ const n=cleanName(inp.value); if(n&&n!==p.name){ p.name=n; savePlayers(); metaTouch(p.id); syncSoon(); } plEditing=null; renderPlayers(); renderPlayerBits(); };
       onTap(sv,go); inp.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); });
     } else {
       const l=document.createElement("span"); l.className="lbl"; l.textContent=p.name+(p.id===curPlayer?"  (playing)":""); l.style.color=PCOL[i%PCOL.length]; r.appendChild(l);
@@ -1158,14 +1178,20 @@ function renderPlayers(){
     plList.appendChild(r); });
   document.getElementById("plAdd").classList.toggle("off",players.length>=8);
 }
-function removePlayer(id){ if(players.length<2||permanent(id)) return; safe(flushTime);
-  players=players.filter(p=>p.id!==id); savePlayers();
-  for(const k of ["lf-best","lf-problem4","lf-time","lf-prog"]) try{ localStorage.removeItem(pkey(k,id)); }catch(e){}
+function removePlayer(id){ if(dropPlayer(id,Date.now())){ renderPlayers(); syncSoon(); } }
+// v25: deleting keeps a "deleted" copy of this device's counters for Family sync (the family total keeps their hours)
+function dropPlayer(id,when){ if(players.length<2||permanent(id)) return false; safe(flushTime);
+  const p=players.find(x=>x.id===id); if(!p) return false;
+  if(syncOn()) safe(()=>{ const g=lsGet(GONE_KEY,{})||{}; g[p.u]=syncEntry(p,when||Date.now()); lsSet(GONE_KEY,g); });
+  players=players.filter(x=>x.id!==id); savePlayers();
+  for(const k of ["lf-best","lf-problem4","lf-time","lf-prog","lf-remote","lf-sync-meta"]) try{ localStorage.removeItem(pkey(k,id)); }catch(e){}
   if(curPlayer===id){ timeDirty=0; setPlayer(players[0].id); }
-  renderPlayers(); }
-function newPlayer(name){ const n=cleanName(name); if(!n||players.length>=8) return null;
+  return true; }
+function newPlayer(name,quietAdd){ const n=cleanName(name); if(!n||players.length>=8) return null;
   let k=3; while(players.some(p=>p.id==="p"+k)) k++; // p1, p2 are Blakeli and Little Bobby
-  const p={id:"p"+k,name:n}; players.push(p); savePlayers(); return p; }
+  const p={id:"p"+k,name:n,u:rid(),c:Date.now()}; players.push(p); savePlayers();
+  for(const x of ["lf-best","lf-problem4","lf-time","lf-prog","lf-remote","lf-sync-meta"]) try{ localStorage.removeItem(pkey(x,p.id)); }catch(e){} // a reused id starts clean
+  if(!quietAdd) syncSoon(); return p; }
 function addPlayer(){ if(!newPlayer(plNew.value)) return; plNew.value=""; safe(()=>plNew.blur()); renderPlayers(); }
 onTap(document.getElementById("plAdd"),addPlayer);
 // anyone can add a player from Who's playing?
@@ -1193,13 +1219,13 @@ onTap(document.getElementById("plDone"),()=>openSettings());
 const TIME_CATS={upper:"Uppercase Test",lower:"Lowercase Test",problem:"Problem Letters",practice:"Practice",draw:"Draw",num:"Find the Number",fingers:"Count the Fingers",drawnum:"Draw the Number",menus:"Menus"};
 const IDLE_MS=120000;
 function loadTime(id){ const o=lsGet(pkey("lf-time",id),{})||{};
-  return {total:+o.total||0, days:(o.days&&typeof o.days==="object")?o.days:{}, games:(o.games&&typeof o.games==="object")?o.games:{}}; }
+  return {total:+o.total||0, days:(o.days&&typeof o.days==="object")?o.days:{}, games:(o.games&&typeof o.games==="object")?o.games:{}, last:+o.last||0}; }
 let timeData=loadTime(), lastTick=Date.now(), lastAct=Date.now(), timeDirty=0;
 function dayKey(t){ const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function timeCat(){ if(mode==="test") return game; if(mode==="draw") return dKind==="num"?"drawnum":"draw"; if(mode==="practice") return mode; if(mode==="home"||mode==="abc"||mode==="nums"||mode==="pick") return "menus"; return null; }
 function timeTick(now){ now=now||Date.now(); const dt=Math.min(now-lastTick,2000); lastTick=now;
   if(dt<=0||document.hidden||now-lastAct>IDLE_MS) return; const c=timeCat(); if(!c) return;
-  timeData.total+=dt; const k=dayKey(now); timeData.days[k]=(+timeData.days[k]||0)+dt; timeData.games[c]=(+timeData.games[c]||0)+dt;
+  timeData.total+=dt; timeData.last=now; const k=dayKey(now); timeData.days[k]=(+timeData.days[k]||0)+dt; timeData.games[c]=(+timeData.games[c]||0)+dt;
   timeDirty+=dt; if(timeDirty>=10000) flushTime(); }
 function flushTime(){ if(!timeDirty) return; timeDirty=0; const ks=Object.keys(timeData.days).sort(); while(ks.length>90) delete timeData.days[ks.shift()]; lsSet(pkey("lf-time"),timeData); }
 setInterval(()=>safe(timeTick),1000);
@@ -1208,7 +1234,7 @@ document.addEventListener("visibilitychange",()=>{ lastTick=Date.now(); if(docum
 window.addEventListener("pagehide",()=>safe(flushTime));
 function fmtTime(ms){ const s=Math.floor((ms||0)/1000); if(s<60) return s+" s"; const m=Math.floor(s/60), h=Math.floor(m/60); return h?h+" h "+(m%60)+" min":m+" min"; }
 function openStats(){ stopAll(); mode="stats"; safe(flushTime); const el=document.getElementById("stList"); el.innerHTML=""; const today=dayKey(Date.now());
-  players.forEach((p,i)=>{ const t=p.id===curPlayer?timeData:loadTime(p.id), b=loadBest(p.id), c=document.createElement("div"); c.className="stCard"; c.dataset.id=p.id;
+  players.forEach((p,i)=>{ const t=statTime(p.id), b=loadBest(p.id), c=document.createElement("div"); c.className="stCard"; c.dataset.id=p.id;
     c.dataset.today=+t.days[today]||0; c.dataset.total=t.total;
     let rows=""; for(const g in TIME_CATS){ const ms=+t.games[g]||0, hs=g in b?'<span class="hs">⭐ '+b[g]+'</span>':""; if(ms||b[g]) rows+='<tr data-g="'+g+'"><td>'+TIME_CATS[g]+'</td><td>'+fmtTime(ms)+'</td><td>'+hs+'</td></tr>'; }
     c.innerHTML='<div class="stHead"><b></b><span>Today <em>'+fmtTime(+t.days[today]||0)+'</em></span><span>Total <em>'+fmtTime(t.total)+'</em></span></div>'+(rows?'<table>'+rows+'</table>':'<p class="hint">No play time yet</p>');
@@ -1232,7 +1258,7 @@ function topConf(c){ let k=null,n=0; for(const x in c||{}) if(c[x]>n){ n=c[x]; k
 function ranked(items,kind){ // worst first: miss rate, then more misses; only items tried PROG_MIN+ times and missed at least once
   return Object.entries(items).filter(([k,v])=>k[0]===kind&&v&&v.w>0).map(([k,v])=>({k,id:k.slice(2),r:+v.r||0,w:+v.w||0,n:(+v.r||0)+(+v.w||0),conf:topConf(v.c)}))
     .map(x=>Object.assign(x,{rate:x.w/x.n})).sort((a,b)=>(b.n>=PROG_MIN)-(a.n>=PROG_MIN)||b.rate-a.rate||b.w-a.w||a.id.localeCompare(b.id)); }
-function worstLetters(id){ return ranked(loadProg(id).items,"L").slice(0,4).map(x=>x.id); } // the 4 worst (ranked first, then any missed)
+function worstLetters(id){ return ranked(progAll(id).items,"L").slice(0,4).map(x=>x.id); } // the 4 worst (ranked first, then any missed)
 let progWho=null;
 function itemHtml(k){ const id=k.slice(2); return k[0]==="L"?'<span class="pgG">'+glyphSvg(id,true)+'</span>':'<span class="pgN">'+(numSvg(id,{h:1.5})||id)+'</span>'; }
 function openProgress(){ stopAll(); mode="progress"; if(!players.some(p=>p.id===progWho)) progWho=curPlayer; renderProgress(); show("progress"); }
@@ -1240,7 +1266,7 @@ function renderProgress(){
   const chips=document.getElementById("pgWho"); chips.innerHTML="";
   players.forEach((p,i)=>{ const b=document.createElement("button"); b.className="rs pgChip"+(p.id===progWho?" on":""); b.textContent=p.name; b.dataset.id=p.id; b.style.background=p.id===progWho?PCOL[i%PCOL.length]:"#bbb";
     onTap(b,()=>{ progWho=p.id; renderProgress(); }); chips.appendChild(b); });
-  const items=(progWho===curPlayer?progData:loadProg(progWho)).items, out=document.getElementById("pgList"); out.innerHTML="";
+  const items=progAll(progWho).items, out=document.getElementById("pgList"); out.innerHTML="";
   for(const [kind,title] of [["L","Letters"],["N","Numbers (Find + Draw the Number)"],["F","Finger counts"]]){
     const all=ranked(items,kind), top=all.filter(x=>x.n>=PROG_MIN).slice(0,10), few=all.filter(x=>x.n<PROG_MIN).length;
     const sec=document.createElement("div"); sec.className="stCard pgSec"; sec.dataset.kind=kind;
@@ -1256,7 +1282,8 @@ function renderProgress(){
 onTap(document.getElementById("pgUse"),()=>{ const w=worstLetters(progWho); if(w.length<4) return;
   lsSet(pickKey(progWho),w); if(progWho===curPlayer) pick=w.slice();
   const u=document.getElementById("pgUse"); u.textContent="✓ Saved as "+playerName(progWho)+"'s Problem Letters"; });
-twoTap(document.getElementById("pgReset"),()=>{ try{ localStorage.removeItem(pkey("lf-prog",progWho)); }catch(e){} if(progWho===curPlayer) progData=loadProg(); renderProgress(); });
+twoTap(document.getElementById("pgReset"),()=>{ try{ localStorage.removeItem(pkey("lf-prog",progWho)); }catch(e){} if(progWho===curPlayer) progData=loadProg();
+  const m=metaGet(progWho); m.pr=Date.now(); metaSet(progWho,m); const rm=lsGet(pkey("lf-remote",progWho),null); if(rm){ rm.prog={items:{}}; lsSet(pkey("lf-remote",progWho),rm); } syncSoon(); renderProgress(); });
 onTap(document.getElementById("pProgress"),()=>openProgress());
 onTap(document.getElementById("pgDone"),()=>openSettings());
 
@@ -1798,6 +1825,95 @@ function onResume(){ safe(()=>{ if(synth){ synth.cancel(); if(synth.paused) synt
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) safe(quiet); else onResume(); });
 window.addEventListener("pageshow",onResume);
 
+// ---------- v25: Family sync (see sync.js). Off until configured AND this device is linked with the family password. ----------
+// Per player on this device: lf-time / lf-prog / lf-best stay THIS device's own counters (the source of truth, never
+// overwritten); lf-remote:<id> = the sum (time, right/wrong) and max (high scores) of the OTHER devices' counters for the
+// same name; lf-sync-meta:<id> = {s: last change, br: {game: high-score reset time}, pr: progress reset time}.
+var GONE_KEY="lf-sync-gone", SYNC_STATE="lf-sync-state", syncT=null, syncing=false, syncAgain=false;
+function syncOn(){ return !!(window.LFSync&&LFSync.ON); }
+function syncLinked(){ return syncOn()&&LFSync.status().linked; }
+function metaGet(id){ const m=lsGet(pkey("lf-sync-meta",id),null); return m&&typeof m==="object"?m:{s:0,br:{},pr:0}; }
+function metaSet(id,m){ lsSet(pkey("lf-sync-meta",id),m); }
+function metaTouch(id){ const m=metaGet(id); m.s=Date.now(); metaSet(id,m); }
+function remoteGet(id){ return lsGet(pkey("lf-remote",id),null)||{}; }
+function ownTime(id){ if(id===curPlayer) return timeData; return loadTime(id); }
+function statTime(id){ const t=ownTime(id), r=remoteGet(id).time; return r&&window.LFSync?LFSync.addTime(t,r):t; }
+function progAll(id){ const o=id===curPlayer?progData:loadProg(id), r=remoteGet(id).prog; return r&&window.LFSync?LFSync.addProg(o,r):o; }
+function syncEntry(p,deleted){ const m=metaGet(p.id), own=lsGet(pkey("lf-best",p.id),{})||{}, b={};
+  for(const g in own) if(+own[g]>0) b[g]=Math.floor(+own[g]);
+  const t=ownTime(p.id), pr=p.id===curPlayer?progData:loadProg(p.id);
+  const e={n:p.name,c:+p.c||0,s:+m.s||0,d:deleted||0,b,br:m.br||{},t:{total:t.total||0,days:t.days||{},games:t.games||{},last:t.last||0},p:{items:pr.items||{}},pr:+m.pr||0};
+  if(permanent(p.id)) e.perm=true; return e; }
+function devLabel(){ const u=navigator.userAgent||""; return /iPad|Macintosh.*Mobile|Macintosh.*Touch/.test(u)&&navigator.maxTouchPoints>1?"iPad":/iPhone/.test(u)?"iPhone":/iPad/.test(u)?"iPad":/Android/.test(u)?"Android":/Mac/.test(u)?"Mac":/Windows/.test(u)?"Windows":/Linux/.test(u)?"Linux":"Device"; }
+function buildRecord(){ safe(flushTime); const pl={}; for(const p of players) pl[p.u]=syncEntry(p,0);
+  const g=lsGet(GONE_KEY,{})||{}; for(const u in g) if(!pl[u]&&g[u]) pl[u]=g[u];
+  return {v:1,label:devLabel(),seen:Date.now(),app:"v25",players:pl}; }
+function inGame(){ return /^(test|draw|practice|pick)$/.test(mode); }
+// everything the other devices know, applied to this device: new players appear, deleted ones go, resets apply,
+// and each player's lf-remote is recomputed (so high scores, hours and right/wrong counts match on every device)
+function applyRemote(devs,me){
+  const others={}; for(const k in devs||{}) if(k!==me) others[k]=devs[k];
+  const G=LFSync.groups(others), gone=lsGet(GONE_KEY,{})||{}; let changed=false;
+  const ownGone=n=>Object.values(gone).filter(e=>e&&LFSync.nm(e.n)===n).map(e=>({e}));
+  const update=p=>{ const n=LFSync.nm(p.name), list=G[n]||[], st=LFSync.nameState(list.concat([{e:syncEntry(p,0)}]));
+    if(!st.alive&&!permanent(p.id)&&!(inGame()&&p.id===curPlayer)){ if(dropPlayer(p.id,st.deletedAt)) changed=true; return; }
+    const m=metaGet(p.id); let mch=false;
+    for(const g in st.rb) if(st.rb[g]>(+(m.br||{})[g]||0)){ m.br=m.br||{}; m.br[g]=st.rb[g]; const ob=lsGet(pkey("lf-best",p.id),{})||{}; ob[g]=0; lsSet(pkey("lf-best",p.id),ob); mch=true; }
+    if(st.rp>(+m.pr||0)){ m.pr=st.rp; lsSet(pkey("lf-prog",p.id),{items:{}}); if(p.id===curPlayer) progData=loadProg(); mch=true; }
+    if(mch) metaSet(p.id,m);
+    const c=LFSync.combine(list,st);
+    lsSet(pkey("lf-remote",p.id),{best:c.best,time:c.time,prog:c.prog,devs:[...new Set(list.filter(x=>!+x.e.d).map(x=>x.dev))].length,at:Date.now()});
+    if(p.id===curPlayer){ const nb=loadBest(); for(const g in nb) best[g]=mch?nb[g]:Math.max(best[g]||0,nb[g]); } };
+  for(const p of players.slice()) update(p);
+  const have=new Set(players.map(p=>LFSync.nm(p.name)));
+  for(const n in G){ if(have.has(n)||players.length>=8) continue;
+    const st=LFSync.nameState(G[n].concat(ownGone(n))); if(!st.alive) continue;
+    const p=newPlayer(st.name,true); if(!p) continue; if(st.created) { p.c=st.created; savePlayers(); }
+    try{ const gg=lsGet(GONE_KEY,{})||{}; for(const u in gg) if(gg[u]&&LFSync.nm(gg[u].n)===n) delete gg[u]; lsSet(GONE_KEY,gg); }catch(e){}
+    have.add(n); update(p); changed=true; }
+  return changed; }
+function syncSoon(ms){ if(!syncOn()) return; clearTimeout(syncT); syncT=setTimeout(()=>{ syncT=null; safe(syncNow); },ms==null?1500:ms); }
+async function syncNow(){ if(!syncLinked()) return false; if(syncing){ syncAgain=true; return false; } syncing=true;
+  const st=lsGet(SYNC_STATE,{})||{}; let changed=false, ok=false;
+  try{ await LFSync.putDevice(buildRecord()); const devs=await LFSync.getAll(); changed=applyRemote(devs,LFSync.status().uid);
+    st.ok=Date.now(); st.err=""; st.pending=false; st.devices=Object.keys(devs).length; ok=true; }
+  catch(e){ st.err=String(e&&e.message||e); st.pending=true; st.fail=Date.now(); if(e&&e.denied) await LFSync.checkLinked().catch(()=>{}); }
+  finally{ lsSet(SYNC_STATE,st); syncing=false; window.__syncCount=(window.__syncCount||0)+1; safe(()=>afterSync(changed)); if(syncAgain){ syncAgain=false; syncSoon(400); } }
+  return ok; }
+function afterSync(changed){ renderPlayerBits();
+  if(mode==="who"&&changed) openWho(); else if(mode==="stats") openStats(); else if(mode==="progress") renderProgress(); else if(mode==="players"&&!plEditing) renderPlayers();
+  else if(mode==="scores") renderScores(); else if(mode==="sync") renderSync(); }
+// sync on open, after each game (show()), on changes, every 3 minutes, when back online / back on screen
+if(syncOn()){ setTimeout(()=>syncSoon(0),2500); setInterval(()=>syncSoon(0),180000);
+  window.addEventListener("online",()=>syncSoon(500));
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) syncSoon(1000); else if(syncLinked()) safe(()=>LFSync.putDevice(buildRecord()).catch(()=>{})); }); }
+window.__sync={now:syncNow,record:buildRecord,apply:applyRemote};
+// Settings > ☁️ Family sync (behind the grown-up code)
+const syMsg=document.getElementById("syMsg");
+function fmtAgo(t){ if(!t) return "never"; const s=Math.round((Date.now()-t)/1000); return s<60?"just now":s<3600?Math.round(s/60)+" min ago":s<86400?Math.round(s/3600)+" h ago":new Date(t).toLocaleDateString(); }
+let syHas=null;
+function renderSync(){ const on=syncOn(), linked=syncLinked(), st=lsGet(SYNC_STATE,{})||{};
+  document.getElementById("syState").textContent=!on?"Family sync isn't switched on yet, so everything stays on this device."
+    :linked?"✅ This device is linked. Players, high scores, progress and play time are shared with the family's other linked devices. Last sync: "+fmtAgo(st.ok)+(st.pending?" (waiting for the internet)":"")+(st.devices?" · "+st.devices+" device"+(st.devices>1?"s":""):"")
+    :syHas===false?"Make up a family sync password (6+ characters). You'll type it once on each phone or tablet you want to link."
+    :"Type the family sync password to link this device.";
+  document.getElementById("syLink").classList.toggle("off",!on||linked);
+  document.getElementById("syPw2").classList.toggle("off",syHas!==false);
+  document.getElementById("syGo").textContent=syHas===false?"Create + link":"Link this device";
+  document.getElementById("syNow").classList.toggle("off",!linked); document.getElementById("syUnlink").classList.toggle("off",!linked); }
+function openSync(){ kpClose(); stopAll(); mode="sync"; syMsg.textContent=""; renderSync(); show("sync");
+  if(syncOn()&&!syncLinked()) LFSync.hasPassword().then(h=>{ syHas=h; if(mode==="sync") renderSync(); }).catch(()=>{ syMsg.textContent="No internet connection right now."; }); }
+onTap(document.getElementById("pSync"),()=>askCode(openSync));
+onTap(document.getElementById("syDone"),()=>openSettings());
+onTap(document.getElementById("syParent"),()=>{ location.href="parent/"; });
+onTap(document.getElementById("syNow"),()=>{ syMsg.textContent="Syncing…"; syncNow().then(ok=>{ syMsg.textContent=ok?"✓ Synced":"Couldn't sync right now (no internet?). It will try again by itself."; renderSync(); }); });
+twoTap(document.getElementById("syUnlink"),()=>{ LFSync.unlink().then(()=>{ syMsg.textContent="This device is no longer linked."; syHas=null; renderSync(); }); });
+onTap(document.getElementById("syGo"),()=>{ const a=document.getElementById("syPw"), b=document.getElementById("syPw2"), create=syHas===false;
+  if(create&&a.value!==b.value){ syMsg.textContent="The two passwords don't match."; return; }
+  syMsg.textContent="Linking…";
+  LFSync.link(a.value,create).then(()=>{ a.value=""; b.value=""; safe(()=>a.blur()); syMsg.textContent="✓ Linked. Syncing…"; renderSync(); return syncNow(); })
+    .then(ok=>{ if(syncLinked()) syMsg.textContent=ok?"✓ Linked and synced":"✓ Linked (will sync when online)"; renderSync(); })
+    .catch(e=>{ syMsg.textContent=e.short?"Use at least 6 characters.":e.wrong?"That's not the family sync password.":e.exists?"A family password already exists: type that one.":"Couldn't reach the internet. Try again."; if(e.exists){ syHas=true; renderSync(); } }); });
 openWho(); // v23: every launch starts at "Who's playing?"
 // offline sound cache: every voice's clips, the selected voice first (sent again when the voice changes, so it jumps the queue)
 function audioList(){ const cur=curVoice(); return [].concat(voiceFiles(cur),...VOICES.filter(v=>v!==cur).map(voiceFiles)).filter((f,i,a)=>a.indexOf(f)===i); }

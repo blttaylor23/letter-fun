@@ -1,12 +1,12 @@
 // v24 (live since the promotion): the same file serves the live app (/) and the beta copy (/beta/). The beta has its own
 // scope and its own shell cache, never deletes the live app's caches, and shares the clip cache (both play ../voices files).
 const BETA=/\/beta\/sw\.js$/.test(location.pathname), ROOT=BETA?"../":"";
-const C=BETA?"letter-fun-beta-v24":"letter-fun-v24"; // app shell (index.html, icons ...): replaced on every release
+const C=BETA?"letter-fun-beta-v25":"letter-fun-v25"; // app shell (index.html, icons ...): replaced on every release
 const A="letter-fun-audio-2";        // recorded clips: kept across releases (bump only when clips change), filled lazily
 const L="abcdefghijklmnopqrstuvwxyz".split("");
 const VOICE_DIRS=[ROOT+"voices/dad2/"]; // v24: Dad = voices/dad2 (live + beta)   // safety net only: the page sends the full list (every voice, the selected one first)
 const PHRASE_FILES=["find","draw","draw_upper","draw_lower","yes","try_again","yes_great_job","keep_going","oops","all_green","speed_slow","speed_normal","speed_fast","nope_a","nope_an","find_number","how_many_fingers","new_record","high_score"];
-const CORE=["./","index.html","art.js","manifest.json","icon-192.png","icon-512.png","icon-180.png"]; // v24: art.js = poster digits + cartoon hands
+const CORE=["./","index.html","art.js","sync.js","sync-config.js","manifest.json","icon-192.png","icon-512.png","icon-180.png","parent/","parent/index.html","parent/manifest.json"]; // v25: + Family sync + the parent dashboard // v24: art.js = poster digits + cartoon hands
 const JOINED=["find","draw_upper","draw_lower","nope_a","nope_an"];
 const MEDIA=L.map(l=>ROOT+"sounds/"+l+".mp3").concat(...VOICE_DIRS.map(d=>L.map(l=>d+"names/"+l+".mp3").concat(L.map(l=>d+"sounds/"+l+".mp3"),PHRASE_FILES.map(p=>d+"phrases/"+p+".mp3"),...JOINED.map(p=>L.map(l=>d+"prompts/"+p+"_"+l+".mp3")))));
 const MEDIA_OWN=["voices/dad2/phrases/correct.mp3"]; // v24: Dad's "Yup!", next to the page (live: /voices/dad2/..., beta copy: /beta/voices/dad2/...)
@@ -63,8 +63,9 @@ self.addEventListener("fetch",e=>{
   }
   // app shell / navigation: cache first (opens instantly, even on a bad connection), refreshed in the background
   if(req.mode==="navigate"||CORE.some(f=>path.endsWith("/"+f)||(f==="./"&&path.endsWith("/")))){
-    const key=req.mode==="navigate"?"index.html":req;
-    const net=fetch(fresh(req.mode==="navigate"?"index.html":req.url)).then(r=>{ if(r.status===200){ const cp=r.clone(); caches.open(C).then(c=>c.put(key,cp)).catch(()=>{}); } return r; });
+    const PARENT=new URL("parent/",self.registration.scope).pathname, page=path.startsWith(PARENT)?"parent/index.html":"index.html"; // v25: the parent dashboard is its own page
+    const key=req.mode==="navigate"?page:req;
+    const net=fetch(fresh(req.mode==="navigate"?page:req.url)).then(r=>{ if(r.status===200){ const cp=r.clone(); caches.open(C).then(c=>c.put(key,cp)).catch(()=>{}); } return r; });
     e.respondWith(caches.open(C).then(c=>c.match(key,{ignoreSearch:true})).then(hit=>{ if(hit){ e.waitUntil(net.catch(()=>{})); return hit; } return net; }).catch(()=>net));
     return;
   }

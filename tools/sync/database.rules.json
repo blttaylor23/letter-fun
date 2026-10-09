@@ -1,0 +1,30 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "lf": {
+      "$fam": {
+        "has": {
+          ".read": true,
+          ".write": "auth != null && !data.exists() && newData.val() === true && newData.parent().child('ph').exists()"
+        },
+        "ph": {
+          ".write": "auth != null && !data.exists() && newData.isString() && newData.val().length === 64"
+        },
+        "members": {
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === $uid && (!newData.exists() || newData.child('h').val() === root.child('lf').child($fam).child('ph').val())"
+          }
+        },
+        "dev": {
+          ".read": "auth != null && root.child('lf').child($fam).child('members').child(auth.uid).exists()",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('lf').child($fam).child('members').child(auth.uid).exists()",
+            ".validate": "!newData.exists() || (newData.child('v').val() === 1 && newData.child('players').exists())"
+          }
+        }
+      }
+    }
+  }
+}
