@@ -90,7 +90,7 @@
   .count{font-size:min(13vw,9vh,88px);font-weight:bold;line-height:1;font-variant-numeric:tabular-nums;min-width:1.2em}
   #tGood{color:#27ae60;text-align:left}
   /* v23: the high score (best streak) sits where the wrong counter used to be */
-  #tBest{color:#d68c00;text-align:right;white-space:nowrap}
+  #tBest{color:#d68c00;text-align:right;white-space:nowrap;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
   #tBest .star{font-size:.72em;margin-right:.06em;vertical-align:.08em}
   .count.pop{animation:hsPop .55s}
   @keyframes hsPop{0%{transform:scale(1)}40%{transform:scale(1.3)}100%{transform:scale(1)}}
@@ -436,8 +436,8 @@ function playSound(l){
 // then add one entry here. (The service worker also caches every voice listed here for offline use.)
 // lacks: phrases this voice didn't record; the Computer says those (never another grown-up's voice).
 const VOICES=[
-  {id:"dad", label:"Dad", dir:ROOT+"voices/dad/", joined:true, lacks:[]}, // joined: has prompts/<phrase>_<letter>.mp3
-  {id:"mom", label:"Mom", dir:ROOT+"voices/mom/", joined:true, lacks:["speed_slow","speed_normal","speed_fast"]},
+  {id:"dad", label:"Dad", dir:ROOT+"voices/dad2/", joined:true, lacks:[]}, // joined: has prompts/<phrase>_<letter>.mp3. v23 beta: Dad's new recordings (voices/dad2: letters, numbers 1-20, "How many fingers?"); the live v22 keeps voices/dad until the beta is promoted
+  {id:"mom", label:"Mom", dir:ROOT+"voices/mom/", joined:true, lacks:["speed_slow","speed_normal","speed_fast","new_record","high_score"]},
   {id:"computer", label:"Computer", dir:null},
 ];
 function lacks(v,x){ return !!(x&&x.p&&v.lacks&&v.lacks.includes(x.p)); }
@@ -449,7 +449,8 @@ const PHRASES={find:"Find the letter", draw:"Draw the letter", draw_upper:"Draw 
   yes:"Yes!", try_again:"Try again!", yes_great_job:"Yes! Great job!", keep_going:"Keep going!", oops:"Oops! Let's try again.",
   all_green:"Great job! You got them all!", speed_slow:"This is slow.", speed_normal:"This is normal.", speed_fast:"This is fast.",
   nope_a:"Nope, that's a", nope_an:"Nope, that's an",
-  find_number:"Find the number", how_many_fingers:"How many fingers?"}; // v23 (no recordings yet: the Computer says them until clips are added)
+  find_number:"Find the number", how_many_fingers:"How many fingers?", // v23 (a voice without these clips: the Computer says them)
+  new_record:"That's a new record!", high_score:"High score!"}; // v23: after "Yes!" when a run first beats the high score / tap the ⭐ number
 // letter NAMES that start with a vowel sound → "an" (an A, an F/"eff", an H/"aitch"…); consonant-sound names → "a"
 const AN_NAME="aefhilmnorsx";
 function nopeArt(l){ return AN_NAME.includes((l||"").toLowerCase())?"nope_an":"nope_a"; }
@@ -472,11 +473,12 @@ function joinParts(v,parts){ // [{p:"find"},{n:"b"},...] -> [{j:"voices/dad/prom
   return [{j,alt:parts.slice(0,2)}].concat(parts.slice(2)); }
 // v23: clips of the NEW kinds (numbers, "Find the number", "How many fingers?") that turned out not to exist (404):
 // the next time they go straight to the fallback (the Computer), with no wait. Dropping the clips in makes them play.
-const missing=new Set(), NEWKIND=/\/(numbers\/\d+|phrases\/(find_number|how_many_fingers)|prompts\/(find_number|nope_an?)_\d+)\.mp3$/;
+const missing=new Set(), NEWKIND=/\/(numbers\/\d+|phrases\/(find_number|how_many_fingers|new_record|high_score)|prompts\/(find_number|nope_an?)_\d+)\.mp3$/;
 function skipMissing(parts){ return parts.map(x=>x.j&&missing.has(x.j)?x.alt:[x]).flat(); }
 function voiceFiles(v){ if(!v.dir) return LETTERS.map(l=>ROOT+"sounds/"+l+".mp3"); const f=[]; for(const l of LETTERS) f.push(v.dir+"names/"+l+".mp3",v.dir+"sounds/"+l+".mp3"); for(const k in PHRASES) if(!lacks(v,{p:k})) f.push(v.dir+"phrases/"+k+".mp3");
   if(v.joined) for(const k of JOINED) if(!lacks(v,{p:k})) for(const l of LETTERS) f.push(v.dir+"prompts/"+k+"_"+l+".mp3");
   for(const n of NUMS) f.push(v.dir+"numbers/"+n+".mp3"); if(v.joined&&!lacks(v,{p:"find_number"})) for(const n of NUMS) f.push(v.dir+"prompts/find_number_"+n+".mp3");
+  if(v.joined) for(const n of NUMS){ const k=numArt(n); if(!lacks(v,{p:k})) f.push(v.dir+"prompts/"+k+"_"+n+".mp3"); } // wrong-number feedback ("Nope, that's a" + 7)
   return f; }
 const vLog=[]; // which files / speech actually played (checked by the tests)
 function logV(x){ vLog.push(x); if(vLog.length>400) vLog.splice(0,200); }
@@ -721,6 +723,7 @@ function loadBest(id){ const o=lsGet(pkey("lf-best",id),{}), r={}; for(const g i
 let best=loadBest();
 function saveBest(){ lsSet(pkey("lf-best"),best); }
 let game="upper", tCase="upper";
+let tRecFrom=0, tRecSaid=false; // v23: "That's a new record!" once per run (streak), the first time it passes the best it started from
 let tDeck=[], tIdx=0, tStreak=0, tAnswer=null, tLast=null, tBusy=false, tBusyAt=0, tNextT=null, tAfterRight=false, tOrder=null;
 let pLetters=[]; // Problem Letters: the 4 in play (each "A".."Z" or "a".."z"), fixed until the game is left
 const testEl=document.getElementById("test"), choicesEl=document.getElementById("choices"), handsEl=document.getElementById("hands");
@@ -741,10 +744,10 @@ function startGame(g){
   if(game==="problem"&&pLetters.length!==4){ openPicker(); return; }
   tCase=game==="upper"?"upper":game==="lower"?"lower":"mixed";
   testEl.dataset.game=game; handsEl.innerHTML=""; fLastKey="";
-  tStreak=0; tLast=null; tOrder=null; showCounts();
+  tStreak=0; tLast=null; tOrder=null; showCounts(); tRecFrom=best[game]||0; tRecSaid=false;
   tDeck=game==="problem"?[]:buildTestDeck(); tIdx=0;
   show("test");
-  preloadParts([{p:"yes"},{p:"try_again"}].concat(game==="fingers"?[]:[{p:"nope_a"},{p:"nope_an"}]));
+  preloadParts([{p:"yes"},{p:"try_again"}].concat(game==="fingers"?[]:[{p:"nope_a"},{p:"nope_an"}],tRecFrom>0?[{p:"new_record"}]:[]));
   askQuestion();
 }
 function promptParts(){
@@ -971,15 +974,17 @@ function choose(b){
   if(isRight(b)){
     tBusy=true; tBusyAt=Date.now(); tAfterRight=true; tStreak++;
     if(tStreak>(best[game]||0)){ best[game]=tStreak; saveBest(); pop(tBestEl); }
+    // v23: the first answer of this run that beats the high score it started from (never on a first-ever score of 0)
+    const rec=!tRecSaid&&tRecFrom>0&&tStreak>tRecFrom; if(rec) tRecSaid=true;
     showCounts(); pop(tGoodEl);
     b.classList.add("right");
     const f=document.getElementById("tFlash"); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),350);
     // next question once "Yes!" has been heard (1.3 s minimum as before; capped, so nothing can leave the test stuck "busy")
-    clearWait(tNextT); tNextT=afterSaid([{p:"yes"}],Math.round(1300*spd().wait),advance);
+    clearWait(tNextT); tNextT=afterSaid(rec?[{p:"yes"},{p:"new_record"}]:[{p:"yes"}],Math.round(1300*spd().wait),advance);
   }else{
     // v20: "Nope, that's a/an" + letter name + "Try again!" (v23: the same for numbers; Count the Fingers: "Try again!").
     // The streak goes back to 0. Ignore further choice taps until the whole feedback finishes.
-    tBusy=true; tBusyAt=Date.now(); tAfterRight=false; tStreak=0; showCounts();
+    tBusy=true; tBusyAt=Date.now(); tAfterRight=false; tStreak=0; showCounts(); tRecFrom=best[game]||0; tRecSaid=false; // a new run
     b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); // replay the shake
     const w=b.dataset.l; let parts, min=2400;
     if(game==="fingers"){ parts=[{p:"try_again"}]; min=1300; }
@@ -990,6 +995,8 @@ function choose(b){
   }
 }
 onTap(document.getElementById("speaker"),e=>{e&&e.stopPropagation&&e.stopPropagation(); promptTest();});
+// v23: tap the ⭐ high-score number -> "High score!" (not while feedback is playing)
+onTap(tBestEl,e=>{e&&e.stopPropagation&&e.stopPropagation(); if(mode!=="test"||tBusy) return; pop(tBestEl); utter([{p:"high_score"}]); });
 
 
 // ---------- settings: problem letters ----------
@@ -1136,7 +1143,7 @@ function whoAddGo(){ if(!newPlayer(whoNew.value)) return; whoNew.value=""; safe(
 onTap(document.getElementById("whoOk"),whoAddGo); whoNew.addEventListener("keydown",e=>{ if(e.key==="Enter") whoAddGo(); });
 onTap(document.getElementById("whoCancel"),()=>{ whoNew.value=""; safe(()=>whoNew.blur()); openWho(); });
 // deleting a player: type the grown-up code on a number keypad
-const DEL_CODE="2323", kp=document.getElementById("keypad"), kpDots=document.getElementById("kpDots");
+const DEL_CODE="1256", kp=document.getElementById("keypad"), kpDots=document.getElementById("kpDots");
 let kpVal="", kpThen=null;
 function askCode(fn){ kpVal=""; kpThen=fn; kpShow(); kp.classList.add("on"); }
 function kpClose(){ kp.classList.remove("on"); kpThen=null; kpVal=""; }
