@@ -6,8 +6,14 @@ BASE=sys.argv[1] if len(sys.argv)>1 else "http://localhost:8824/letter-fun/beta/
 ENG=sys.argv[2] if len(sys.argv)>2 else "chromium"
 SHOTS="/workspace/letter-fun-shots/"; TAG=sys.argv[3] if len(sys.argv)>3 else "v25"
 FAM="famtest-"+str(int(time.time()))
-CFG="window.LF_SYNC_CONFIG="+json.dumps({"apiKey":"demo-key","db":"http://127.0.0.1:9000","dbq":"ns=demo-letterfun-default-rtdb","fam":FAM,
-  "authBase":"http://127.0.0.1:9099/identitytoolkit.googleapis.com","tokenBase":"http://127.0.0.1:9099/securetoken.googleapis.com"})+";"
+_E={"apiKey":"demo-key","db":"http://127.0.0.1:9000","dbq":"ns=demo-letterfun-default-rtdb","fam":FAM,
+  "authBase":"http://127.0.0.1:9099/identitytoolkit.googleapis.com","tokenBase":"http://127.0.0.1:9099/securetoken.googleapis.com"}
+if os.environ.get("LF_REAL"):   # the REAL Firebase backend with a throwaway family id (key + db read from the repo's sync-config.js, never printed)
+    import re as _re
+    _t=open("/workspace/letter-fun/sync-config.js").read(); _g=lambda k:_re.search(k+r':"([^"]+)"',_t).group(1)
+    FAM="selftest-"+str(int(time.time())); _E={"apiKey":_g("apiKey"),"db":_g("db"),"fam":FAM}
+    open("/tmp/lf_throwaway_fam","a").write(FAM+"\n")
+CFG="window.LF_SYNC_CONFIG="+json.dumps(_E)+";"
 PW="tiger-moon-42"
 fails=[]
 def check(c,m):
@@ -91,7 +97,7 @@ async def main():
         D=await device(br,"parent phone",390,844)
         await D.goto(BASE+"parent/"); await D.wait_for_timeout(800)
         check(await D.evaluate("!document.getElementById('setup').hidden"), "dashboard asks for the family password on a new device")
-        await D.fill("#pw","wrong-password"); await tap(D,"#go",800)
+        await D.fill("#pw","wrong-password"); await tap(D,"#go",300); await D.wait_for_function("document.getElementById('msg').textContent!=='Checking…'",timeout=15000)
         check("not the family" in await D.evaluate("document.getElementById('msg').textContent"), "dashboard: wrong password refused")
         await D.fill("#pw",PW); await tap(D,"#go",300); await D.wait_for_function("window.__dash",timeout=10000)
         d=await D.evaluate("({tot:__dash.total.total, pl:__dash.players.map(p=>[p.name,p.devices,p.time.total,p.alive,p.best]), hm:document.getElementById('totalHM').textContent, cards:[...document.querySelectorAll('.pl')].map(c=>c.dataset.name)})")

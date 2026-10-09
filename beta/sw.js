@@ -1,7 +1,7 @@
 // v24 (live since the promotion): the same file serves the live app (/) and the beta copy (/beta/). The beta has its own
 // scope and its own shell cache, never deletes the live app's caches, and shares the clip cache (both play ../voices files).
 const BETA=/\/beta\/sw\.js$/.test(location.pathname), ROOT=BETA?"../":"";
-const C=BETA?"letter-fun-beta-v25":"letter-fun-v25"; // app shell (index.html, icons ...): replaced on every release
+const C=BETA?"letter-fun-beta-v26":"letter-fun-v26"; // app shell (index.html, icons ...): replaced on every release
 const A="letter-fun-audio-2";        // recorded clips: kept across releases (bump only when clips change), filled lazily
 const L="abcdefghijklmnopqrstuvwxyz".split("");
 const VOICE_DIRS=[ROOT+"voices/dad2/"]; // v24: Dad = voices/dad2 (live + beta)   // safety net only: the page sends the full list (every voice, the selected one first)
@@ -59,6 +59,12 @@ self.addEventListener("fetch",e=>{
   // audio: cached copy if we have it; a clip we know isn't cached yet is NOT intercepted - the browser loads it natively (proper range requests)
   if(/\.mp3$/.test(path)){
     if(!known||known.has(path)) e.respondWith(fromAudioCache(req).then(r=>r||fetch(req)).catch(()=>fetch(req)));
+    return;
+  }
+  // v26: the sync settings file is network-first (cache only as the offline fallback), so a change of backend/config reaches every device on its next open
+  if(path.endsWith("/sync-config.js")){
+    e.respondWith(fetch(fresh(req.url)).then(r=>{ if(r.status===200){ const cp=r.clone(); caches.open(C).then(c=>c.put(req.url,cp)).catch(()=>{}); } return r; })
+      .catch(()=>caches.open(C).then(c=>c.match(req.url,{ignoreSearch:true})).then(h=>h||Response.error())));
     return;
   }
   // app shell / navigation: cache first (opens instantly, even on a bad connection), refreshed in the background
