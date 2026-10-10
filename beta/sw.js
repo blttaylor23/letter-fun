@@ -1,7 +1,7 @@
 // v24 (live since the promotion): the same file serves the live app (/) and the beta copy (/beta/). The beta has its own
 // scope and its own shell cache, never deletes the live app's caches, and shares the clip cache (both play ../voices files).
 const BETA=/\/beta\/sw\.js$/.test(location.pathname), ROOT=BETA?"../":"";
-const C=BETA?"letter-fun-beta-v26":"letter-fun-v26"; // app shell (index.html, icons ...): replaced on every release
+const C=BETA?"letter-fun-beta-v27":"letter-fun-v27"; // app shell (index.html, icons ...): replaced on every release
 const A="letter-fun-audio-2";        // recorded clips: kept across releases (bump only when clips change), filled lazily
 const L="abcdefghijklmnopqrstuvwxyz".split("");
 const VOICE_DIRS=[ROOT+"voices/dad2/"]; // v24: Dad = voices/dad2 (live + beta)   // safety net only: the page sends the full list (every voice, the selected one first)

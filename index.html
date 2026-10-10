@@ -181,7 +181,10 @@
   button.rs.off{background:#ccc}
   #hsAll{height:max(48px,min(11vw,7vh,64px));padding:0 min(4vw,28px)}
   /* players */
-  #who{align-items:center;justify-content:center;gap:4vmin;padding:calc(4vmin + var(--sat)) calc(4vmin + var(--sar)) calc(4vmin + var(--sab)) calc(4vmin + var(--sal))}
+  #who{align-items:center;justify-content:flex-start;gap:4vmin;padding:calc(4vmin + var(--sat)) calc(4vmin + var(--sar)) calc(6vmin + var(--sab)) calc(4vmin + var(--sal));
+    /* v27: scrolls up/down when there are more players than fit (touch, swipe, wheel); centred when they all fit */
+    overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;height:100vh;height:100dvh;inset:0 0 auto 0}
+  #who::before,#who::after{content:"";flex:1 0 0}
   #who h1{margin:0;font-size:min(11vw,10vh,96px);color:#2a9d8f;text-align:center;line-height:1.1}
   #whoList{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(80vw,300px),1fr));gap:4vmin;width:100%;max-width:1100px}
   #whoList button.big{width:100%;height:min(36vh,300px);font-size:min(8vw,8vh,72px);line-height:1.1;font-family:inherit;font-weight:bold;padding:0 2vmin}
@@ -232,7 +235,7 @@
 </style>
 </head>
 <body>
-<div id="who" class="screen on">
+<div id="who" class="screen scroll on">
   <h1>Who's playing?</h1>
   <div id="whoList"></div>
   <button id="whoAdd" class="rs">＋ Add player</button>
@@ -1196,7 +1199,7 @@ function addPlayer(){ if(!newPlayer(plNew.value)) return; plNew.value=""; safe((
 onTap(document.getElementById("plAdd"),addPlayer);
 // anyone can add a player from Who's playing?
 const whoNew=document.getElementById("whoNew"), whoForm=document.getElementById("whoForm");
-onTap(document.getElementById("whoAdd"),()=>{ if(players.length>=8) return; whoForm.classList.add("on"); document.getElementById("whoAdd").style.display="none"; safe(()=>whoNew.focus()); });
+onTap(document.getElementById("whoAdd"),()=>{ if(players.length>=8) return; whoForm.classList.add("on"); document.getElementById("whoAdd").style.display="none"; safe(()=>whoNew.focus()); safe(()=>whoForm.scrollIntoView({block:"nearest"})); });
 function whoAddGo(){ if(!newPlayer(whoNew.value)) return; whoNew.value=""; safe(()=>whoNew.blur()); openWho(); }
 onTap(document.getElementById("whoOk"),whoAddGo); whoNew.addEventListener("keydown",e=>{ if(e.key==="Enter") whoAddGo(); });
 onTap(document.getElementById("whoCancel"),()=>{ whoNew.value=""; safe(()=>whoNew.blur()); openWho(); });
