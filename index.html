@@ -43,12 +43,12 @@
   #goPractice{background:#2ecc71}#goUpper{background:#3a86ff}#goLower{background:#8e44ad}#goDraw{background:#e76f51}
   button#gear{position:absolute;top:calc(12px + var(--sat));right:calc(12px + var(--sar));flex:none;width:58px;height:58px;padding:0;border-radius:50%;font-size:30px;line-height:58px;color:#fff;background:#c9bfae;opacity:.75;touch-action:manipulation}
   /* settings (problem letters) */
-  #settings{align-items:center;gap:2vmin;padding:calc(3vmin + var(--sat)) calc(3vmin + var(--sar)) calc(3vmin + var(--sab)) calc(3vmin + var(--sal))}
+  #settings{overflow-y:auto;-webkit-overflow-scrolling:touch;align-items:center;gap:2vmin;padding:calc(3vmin + var(--sat)) calc(3vmin + var(--sar)) calc(3vmin + var(--sab)) calc(3vmin + var(--sal))}
   #settings h2{margin:0;font-size:min(8vw,6vh,52px);color:#e76f51}
   #settings .hint{margin:0;font-size:min(4.5vw,3vh,26px);color:#777;text-align:center}
-  #pGrid{flex:1;min-height:0;width:100%;max-width:1200px;display:grid;grid-template-columns:repeat(5,1fr);gap:1.6vmin}
+  #pGrid{flex:none;width:100%;max-width:1200px;display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:auto;gap:1.6vmin} /* v28: rows sized to the letters (no squeezing), the screen scrolls if needed */
   @media (orientation:landscape){#pGrid{grid-template-columns:repeat(9,1fr)}}
-  button.pl{flex:none;width:100%;height:100%;min-height:0;padding:0;border-radius:2.5vmin;background:#fff;border:.6vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(7vw,5vh,56px);touch-action:manipulation}
+  button.pl{flex:none;width:100%;height:auto;min-height:calc(1.3em + 2.4vmin);line-height:1.3;padding:.8vmin 0;box-sizing:border-box;overflow:hidden;border-radius:2.5vmin;background:#fff;border:.6vmin solid #e0d6c2;color:#444;font-family:inherit;font-weight:bold;font-size:min(7vw,5vh,56px);touch-action:manipulation}
   @media (orientation:landscape){button.pl{font-size:min(4.5vw,7vh,56px)}}
   button.pl.on{background:#e76f51;border-color:#b5523a;color:#fff}
   #pBtns{display:flex;gap:4vmin;flex:none}
