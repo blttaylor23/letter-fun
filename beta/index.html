@@ -128,7 +128,14 @@
     .menuRow.two button.big{width:100%;height:min(28vh,300px);font-size:min(10vw,5.5vh,64px)}
     .menuRow.three button.big{width:100%;height:min(21vh,260px);font-size:min(9vw,5vh,60px)}}
   .menuRow button.big .ico{font-size:1.4em;margin-bottom:.1em}
-  #goProblem{background:#d81b60}#goFindNum{background:#2a9d8f}#goFingers{background:#f4a261}
+  #goProblem{background:#d81b60}#goFindNum{background:#2a9d8f}#goFingers{background:#f4a261}#goMoreLess{background:#6a4c93}
+  /* v28 beta: More or Less (4 games in the Numbers menu) */
+  .menuRow.four button.big{width:calc((100% - 9vmin)/4)}
+  @media (orientation:portrait){.menuRow.four button.big{width:100%;height:min(16vh,200px);font-size:min(8vw,4.4vh,56px)}.menuRow.four button.big .ico{font-size:1.2em}}
+  #test[data-game=moreless] #choices{grid-template-columns:1fr 1fr;grid-template-rows:1fr auto;align-content:center}
+  #choices button.choice.mlHand{padding:2vmin}
+  #choices button.choice.mlHand svg{width:100%;height:100%;display:block}
+  #choices button.choice.mlSame{grid-column:1 / span 2;height:min(13vh,120px);font-size:min(9vw,6vh,60px);line-height:1;color:#6a4c93}
   /* Count the Fingers: two hands above the 1-10 buttons */
   #hands{display:none;flex:1.15 1 0;min-height:0;align-items:center;justify-content:center;padding:0 1vmin}
   #test[data-game=fingers] #hands{display:flex}
@@ -266,10 +273,11 @@
 <div id="nums" class="screen menu">
   <button class="homeBtn" aria-label="Home">🏠</button>
   <h1>Numbers 123</h1>
-  <div class="menuRow three">
+  <div class="menuRow three four">
     <button id="goFindNum" class="big"><span class="ico">7️⃣</span>Find the Number</button>
     <button id="goFingers" class="big"><span class="ico">🖐️</span>Count the Fingers</button>
     <button id="goDrawNum" class="big"><span class="ico">✏️</span>Draw the Number</button>
+    <button id="goMoreLess" class="big"><span class="ico">⚖️</span>More or Less</button>
   </div>
 </div>
 <div id="pick" class="screen">
@@ -487,7 +495,9 @@ const PHRASES={find:"Find the letter", draw:"Draw the letter", draw_upper:"Draw 
   yes:"Yes!", try_again:"Try again!", yes_great_job:"Yes! Great job!", keep_going:"Keep going!", oops:"Oops! Let's try again.",
   all_green:"Great job! You got them all!", speed_slow:"This is slow.", speed_normal:"This is normal.", speed_fast:"This is fast.",
   nope_a:"Nope, that's a", nope_an:"Nope, that's an",
-  find_number:"Find the number", how_many_fingers:"How many fingers?", draw_number:"Draw the number", // v23 (v24: draw_number) (a voice without these clips: the Computer says them)
+  find_number:"Find the number", how_many_fingers:"How many fingers?",
+  more_q:"Which hand has more fingers?", less_q:"Which hand has less fingers?", more_yes:"That one has more!", less_yes:"That one has less!", same:"They're the same!", // v28 beta: More or Less (no recordings yet: the Computer says them until phrases/<key>.mp3 is dropped in; try_again reuses the existing clip)
+  draw_number:"Draw the number", // v23 (v24: draw_number) (a voice without these clips: the Computer says them)
   new_record:"That's a new record!", high_score:"High score!", correct:"Yup!"}; // v24: correct = Dad's "Yup!" (beta/voices/dad2/phrases/correct.mp3) // v23: after "Yes!" when a run first beats the high score / tap the ⭐ number
 // letter NAMES that start with a vowel sound → "an" (an A, an F/"eff", an H/"aitch"…); consonant-sound names → "a"
 const AN_NAME="aefhilmnorsx";
@@ -511,7 +521,7 @@ function joinParts(v,parts){ // [{p:"find"},{n:"b"},...] -> [{j:"voices/dad/prom
   return [{j,alt:parts.slice(0,2)}].concat(parts.slice(2)); }
 // v23: clips of the NEW kinds (numbers, "Find the number", "How many fingers?") that turned out not to exist (404):
 // the next time they go straight to the fallback (the Computer), with no wait. Dropping the clips in makes them play.
-const missing=new Set(), NEWKIND=/\/(numbers\/\d+|phrases\/(find_number|how_many_fingers|new_record|high_score|correct)|prompts\/(find_number|nope_an?)_\d+)\.mp3$/;
+const missing=new Set(), NEWKIND=/\/(numbers\/\d+|phrases\/(find_number|how_many_fingers|new_record|high_score|correct|more_q|less_q|more_yes|less_yes|same)|prompts\/(find_number|nope_an?)_\d+)\.mp3$/;
 function skipMissing(parts){ return parts.map(x=>x.j&&missing.has(x.j)?x.alt:[x]).flat(); }
 function voiceFiles(v){ if(!v.dir) return LETTERS.map(l=>ROOT+"sounds/"+l+".mp3"); const f=[]; for(const l of LETTERS) f.push(v.dir+"names/"+l+".mp3",v.dir+"sounds/"+l+".mp3"); for(const k in PHRASES) if(!lacks(v,{p:k})) f.push(clipUrl(v,{p:k}));
   if(v.joined) for(const k of JOINED) if(!lacks(v,{p:k})) for(const l of LETTERS) f.push(v.dir+"prompts/"+k+"_"+l+".mp3");
@@ -748,6 +758,7 @@ onTap(document.getElementById("goLower"),()=>startTest("lower"));
 onTap(document.getElementById("goProblem"),()=>openPicker());
 onTap(document.getElementById("goFindNum"),()=>startGame("num"));
 onTap(document.getElementById("goFingers"),()=>startGame("fingers"));
+onTap(document.getElementById("goMoreLess"),()=>startGame("moreless"));
 document.querySelectorAll(".homeBtn").forEach(b=>onTap(b,e=>{e&&e.stopPropagation&&e.stopPropagation(); const s=b.closest(".screen"); goBack(s?s.id:"");}));
 onTap(document.getElementById("goDraw"),()=>startDraw("letter"));
 onTap(document.getElementById("goDrawNum"),()=>startDraw("num"));
@@ -758,7 +769,7 @@ onTap(document.getElementById("gear"),()=>{ if(mode==="home") openSettings(); })
 // All endless. Score: a GREEN streak (right answers in a row; a wrong answer puts it back to 0) and, where the wrong
 // counter used to be, each game's own high score (best streak) with a ⭐, kept in localStorage.
 const GAMES={upper:{label:"Uppercase Test",menu:"abc"}, lower:{label:"Lowercase Test",menu:"abc"}, problem:{label:"Problem Letters",menu:"abc"},
-  num:{label:"Find the Number",menu:"nums"}, fingers:{label:"Count the Fingers",menu:"nums"},
+  num:{label:"Find the Number",menu:"nums"}, fingers:{label:"Count the Fingers",menu:"nums"}, moreless:{label:"More or Less",menu:"nums"},
   drawnum:{label:"Draw the Number",menu:"nums"}, drawnum_free:{label:"Draw the Number (no guide)",menu:"nums"}}; // v24: Draw the Number keeps its own high score with the guide on / off
 // per player: lf-best:<player id>
 function loadBest(id){ const o=lsGet(pkey("lf-best",id),{}), rb=(lsGet(pkey("lf-remote",id),null)||{}).best||{}, r={}; for(const g in GAMES){ const v=Math.max(o&&typeof o==="object"?+o[g]||0:0,+rb[g]||0); r[g]=v>0&&isFinite(v)?Math.floor(v):0; } return r; } // v25: + the best on other linked devices
@@ -789,12 +800,13 @@ function startGame(g){
   tStreak=0; tLast=null; tOrder=null; showCounts(); tRecFrom=best[game]||0; tRecSaid=false;
   tDeck=game==="problem"?[]:buildTestDeck(); tIdx=0;
   show("test");
-  preloadParts(yesParts([{p:"yes"}]).concat([{p:"try_again"}],game==="fingers"?[]:[{p:"nope_a"},{p:"nope_an"}],tRecFrom>0?[{p:"new_record"}]:[]));
+  preloadParts(yesParts([{p:"yes"}]).concat([{p:"try_again"}],game==="moreless"?[{p:"more_q"},{p:"less_q"},{p:"more_yes"},{p:"less_yes"},{p:"same"}]:[],game==="fingers"||game==="moreless"?[]:[{p:"nope_a"},{p:"nope_an"}],tRecFrom>0?[{p:"new_record"}]:[]));
   askQuestion();
 }
 function promptParts(){
   if(game==="num") return [{p:"find_number"},{num:tAnswer}];
   if(game==="fingers") return [{p:"how_many_fingers"}];
+  if(game==="moreless") return [{p:mlAsk==="less"?"less_q":"more_q"}];
   return [{p:"find"},{n:String(tAnswer).toLowerCase()}];
 }
 function promptTest(){ if(mode!=="test"||tAnswer==null) return; utter(promptParts()); }
@@ -825,6 +837,7 @@ function askQuestion(){
     if(nx) preloadParts([{p:"find_number"},{num:nx}]);
     return;
   }
+  if(game==="moreless") return askMoreLess();
   if(game==="fingers"){
     drawHands(fingerPic(ans));
     renderTiles(NUMS.slice(0,10).map(n=>({v:String(n),ch:String(n),kind:"num"}))); // always 1-10 in counting order
@@ -910,6 +923,26 @@ function drawHands(pic){
     handSvg(pic.L,"L")+handSvg(pic.R,"R")+'</svg>';
   window.__fingers={total:pic.total,left:pic.a,right:pic.b,key:pic.key,up:handsEl.querySelectorAll('[data-up="1"]').length}; // test hook
 }
+// ---------- More or Less (v28 beta): two hands (0-5 fingers each, the Count the Fingers art); "Which hand has more / less fingers?"
+// The kid taps a hand. Normal rounds never have equal hands; about 1 round in 7 is equal and the answer is the Same button
+// (always shown, so it doesn't give the answer away). Never the same pair twice in a row.
+let mlAsk="more", mlLast="";
+function mlHandBtn(n,side){
+  const b=document.createElement("button"); b.className="choice mlHand"; b.dataset.l=side; b.dataset.n=n;
+  b.setAttribute("aria-label",(side==="L"?"Left":"Right")+" hand, "+n+" fingers");
+  b.innerHTML='<svg viewBox="'+(side==="L"?"0":"308")+' 0 308 330" preserveAspectRatio="xMidYMid meet" aria-hidden="true">'+handSvg(F_ORDER.slice(0,n),side)+'</svg>';
+  return b; }
+function askMoreLess(){
+  let a,b,k;
+  do{ a=Math.floor(Math.random()*6); b=Math.random()<1/7?a:Math.floor(Math.random()*6); k=a+"-"+b; }while(k===mlLast);
+  mlLast=k; mlAsk=Math.random()<0.5?"more":"less";
+  tAnswer=a===b?"same":(mlAsk==="more")===(a>b)?"L":"R"; tLast=tAnswer;
+  choicesEl.innerHTML="";
+  const items=[mlHandBtn(a,"L"),mlHandBtn(b,"R")], s=document.createElement("button");
+  s.className="choice mlSame"; s.dataset.l="same"; s.textContent="Same"; items.push(s);
+  for(const e of items){ onTap(e,()=>choose(e)); e.addEventListener("contextmenu",ev=>ev.preventDefault()); choicesEl.appendChild(e); }
+  window.__moreless={left:a,right:b,ask:mlAsk,answer:tAnswer}; // test hook
+  fitCounters(); promptTest(); }
 function numFit(labels,w,h,m,fam){
   const ink=inkOf("0123456789",fam); let wid=0;
   try{ const c=document.createElement("canvas").getContext("2d"); c.font="bold 1000px "+fam;
@@ -964,7 +997,7 @@ function fitCounters(){
 // pick the columns x rows that give the biggest tiles for this screen, then size the font so every letter's ink
 // (tails of g j p q y, tall b d f h k l t, the i/j dots, wide W M) fits inside the tile border with a margin
 function layoutChoices(){
-  fitCounters();
+  fitCounters(); if(game==="moreless"&&mode==="test") return; // its own layout (CSS)
   const n=choicesEl.children.length; if(!n) return;
   const r=choicesEl.getBoundingClientRect(); if(!r.width||!r.height) return;
   const vmin=Math.min(window.innerWidth,window.innerHeight), gap=vmin*0.02, pad=vmin*0.02, bw=vmin*0.008, rad=Math.max(0,vmin*0.04-bw);
@@ -1031,14 +1064,14 @@ function choose(b){
     b.classList.add("right");
     const f=document.getElementById("tFlash"); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"),350);
     // next question once "Yes!" has been heard (1.3 s minimum as before; capped, so nothing can leave the test stuck "busy")
-    clearWait(tNextT); tNextT=afterSaid(yesParts([{p:"yes"}]).concat(rec?[{p:"new_record"}]:[]),Math.round(1300*spd().wait),advance);
+    clearWait(tNextT); tNextT=afterSaid(yesParts([{p:"yes"}]).concat(game==="moreless"?[{p:tAnswer==="same"?"same":mlAsk==="less"?"less_yes":"more_yes"}]:[],rec?[{p:"new_record"}]:[]),Math.round(1300*spd().wait),advance);
   }else{
     // v20: "Nope, that's a/an" + letter name + "Try again!" (v23: the same for numbers; Count the Fingers: "Try again!").
     // The streak goes back to 0. Ignore further choice taps until the whole feedback finishes.
     tBusy=true; tBusyAt=Date.now(); tAfterRight=false; tStreak=0; showCounts(); tRecFrom=best[game]||0; tRecSaid=false; // a new run
     b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); // replay the shake
     const w=b.dataset.l; let parts, min=2400;
-    if(game==="fingers"){ parts=[{p:"try_again"}]; min=1300; }
+    if(game==="fingers"||game==="moreless"){ parts=[{p:"try_again"}]; min=1300; }
     else if(game==="num"){ parts=[{p:numArt(+w)},{num:+w},{p:"try_again"}]; }
     else { const l=w.toLowerCase(); parts=[{p:nopeArt(l)},{n:l},{p:"try_again"}]; }
     clearWait(tNextT);
@@ -1219,7 +1252,7 @@ function openPlayers(){ kpClose(); stopAll(); mode="players"; plEditing=null; re
 onTap(document.getElementById("pPlayers"),()=>openPlayers());
 onTap(document.getElementById("plDone"),()=>openSettings());
 // play time: counted once a second while the app is visible, in a game or a menu, and someone touched it in the last 2 minutes
-const TIME_CATS={upper:"Uppercase Test",lower:"Lowercase Test",problem:"Problem Letters",practice:"Practice",draw:"Draw",num:"Find the Number",fingers:"Count the Fingers",drawnum:"Draw the Number",menus:"Menus"};
+const TIME_CATS={upper:"Uppercase Test",lower:"Lowercase Test",problem:"Problem Letters",practice:"Practice",draw:"Draw",num:"Find the Number",fingers:"Count the Fingers",moreless:"More or Less",drawnum:"Draw the Number",menus:"Menus"};
 const IDLE_MS=120000;
 function loadTime(id){ const o=lsGet(pkey("lf-time",id),{})||{};
   return {total:+o.total||0, days:(o.days&&typeof o.days==="object")?o.days:{}, games:(o.games&&typeof o.games==="object")?o.games:{}, last:+o.last||0}; }
@@ -1252,7 +1285,7 @@ renderPlayerBits();
 const PROG_MIN=3; // tries needed before an item is ranked
 function loadProg(id){ const o=lsGet(pkey("lf-prog",id),{}); return {items:(o&&o.items&&typeof o.items==="object")?o.items:{}}; }
 let progData=loadProg();
-function progItem(v){ v=String(v); if(game==="num") return "N:"+v; if(game==="fingers") return "F:"+v; if(game==="upper") return "L:"+v.toUpperCase(); if(game==="lower") return "L:"+v.toLowerCase(); return "L:"+v; }
+function progItem(v){ v=String(v); if(game==="num") return "N:"+v; if(game==="fingers") return "F:"+v; if(game==="moreless") return "C:"+v; if(game==="upper") return "L:"+v.toUpperCase(); if(game==="lower") return "L:"+v.toLowerCase(); return "L:"+v; }
 function recordItem(k,right){ const it=progData.items[k]||(progData.items[k]={r:0,w:0,c:{}}); if(right) it.r++; else it.w++; lsSet(pkey("lf-prog"),progData); } // v24: Draw the Number (numbers count with Find the Number)
 function recordTry(ans,tapped,right){ if(ans==null) return; const k=progItem(ans), it=progData.items[k]||(progData.items[k]={r:0,w:0,c:{}});
   if(right) it.r++; else { it.w++; const t=progItem(tapped); it.c[t]=(+it.c[t]||0)+1; }
