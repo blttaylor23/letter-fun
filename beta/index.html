@@ -481,7 +481,8 @@ function playSound(l){
 const VOICES=[
   {id:"dad", label:"Dad", dir:ROOT+"voices/dad2/", joined:true, lacks:["draw_number"], own:{correct:"voices/dad2/phrases/correct.mp3"}}, // v24: own = clips that live next to this page (voices/... beside index.html; the beta has its own copy): Dad's "Yup!" for every correct answer.
   // v24: no "Draw the number" clip yet (the Computer says that part, Dad says the number). joined: has prompts/<phrase>_<letter>.mp3. v23 beta: Dad's new recordings (voices/dad2: letters, numbers 1-20, "How many fingers?"); the live v22 keeps voices/dad until the beta is promoted
-  {id:"mom", label:"Mom", dir:ROOT+"voices/mom/", joined:true, lacks:["speed_slow","speed_normal","speed_fast","new_record","high_score","draw_number","correct"]}, // Mom keeps her "Yes!"
+  {id:"mom", label:"Mom", dir:ROOT+"voices/mom/", joined:true, lacks:[], own:{correct:"voices/mom/phrases/correct.mp3"}, // v32 beta: Mom recorded her list (numbers 1-20, plus/minus/equals, the number-game + More or Less phrases, "Yup!", record / high score, speeds)
+    betaDir:"voices/mom/", betaRe:/^(numbers\/|math\/|prompts\/(find_number|nope_an?)_\d+\.mp3|phrases\/(find_number|how_many_fingers|draw_number|more_q|less_q|more_yes|less_yes|same|correct|new_record|high_score|speed_slow|speed_normal|speed_fast)\.mp3)/}, // her new clips live next to the beta page (beta/voices/mom) until promoted; the rest stay in ../voices/mom
   {id:"computer", label:"Computer", dir:null},
 ];
 // v24: what a correct answer says: Dad's own "Yup!" clip when he has it, else the voice's usual "Yes!" / "Yes! Great job!"
@@ -505,7 +506,8 @@ function nopeArt(l){ return AN_NAME.includes((l||"").toLowerCase())?"nope_an":"n
 // an utterance is a list of parts: {p:"find"} phrase, {n:"b"} letter name, {s:"b"} letter sound
 // v23: {num:7} a number, voices/<voice>/numbers/7.mp3 (1-20)
 function partsText(parts){ return parts.filter(x=>!x.s).map(x=>x.p?PHRASES[x.p]:x.num!=null?String(x.num)+".":x.n.toUpperCase()+".").join(" "); }
-function clipUrl(v,x){ if(x.p&&v.own&&v.own[x.p]) return v.own[x.p]; return x.j?x.j:v.dir+(x.p?"phrases/"+x.p:x.n?"names/"+x.n:x.num!=null?"numbers/"+x.num:"sounds/"+x.s)+".mp3"; }
+function vp(v,rel){ return (v.betaRe&&v.betaRe.test(rel)?v.betaDir:v.dir)+rel; } // v32 beta: a voice's clips that live next to this page
+function clipUrl(v,x){ if(x.p&&v.own&&v.own[x.p]) return v.own[x.p]; return x.j?x.j:vp(v,(x.p?"phrases/"+x.p:x.n?"names/"+x.n:x.num!=null?"numbers/"+x.num:"sounds/"+x.s)+".mp3"); }
 // v15: "Find the letter" / "Draw the letter" / "Draw the lowercase letter" + the name are also recorded as ONE clip each
 // (joined with no gap), so the name follows instantly on every device: no second file to load between the two parts.
 const JOINED=["find","draw_upper","draw_lower","nope_a","nope_an"]; // v20: wrong-tap prefix + letter name
@@ -514,8 +516,8 @@ const JOINED_NUM=["find_number","nope_a","nope_an"], NUMS=Array.from({length:20}
 function joinParts(v,parts){ // [{p:"find"},{n:"b"},...] -> [{j:"voices/dad/prompts/find_b.mp3",alt:[{p:"find"},{n:"b"}]},...]
   if(!v.dir||!v.joined||parts.length<2) return parts;
   let j=null;
-  if(JOINED.includes(parts[0].p)&&parts[1].n) j=v.dir+"prompts/"+parts[0].p+"_"+parts[1].n+".mp3";
-  else if(JOINED_NUM.includes(parts[0].p)&&parts[1].num!=null) j=v.dir+"prompts/"+parts[0].p+"_"+parts[1].num+".mp3";
+  if(JOINED.includes(parts[0].p)&&parts[1].n) j=vp(v,"prompts/"+parts[0].p+"_"+parts[1].n+".mp3");
+  else if(JOINED_NUM.includes(parts[0].p)&&parts[1].num!=null) j=vp(v,"prompts/"+parts[0].p+"_"+parts[1].num+".mp3");
   if(!j) return parts;
   if(lacks(v,parts[0])) return parts; // don't request a joined clip for a phrase this voice never recorded
   return [{j,alt:parts.slice(0,2)}].concat(parts.slice(2)); }
@@ -525,8 +527,8 @@ const missing=new Set(), NEWKIND=/\/(numbers\/\d+|phrases\/(find_number|how_many
 function skipMissing(parts){ return parts.map(x=>x.j&&missing.has(x.j)?x.alt:[x]).flat(); }
 function voiceFiles(v){ if(!v.dir) return LETTERS.map(l=>ROOT+"sounds/"+l+".mp3"); const f=[]; for(const l of LETTERS) f.push(v.dir+"names/"+l+".mp3",v.dir+"sounds/"+l+".mp3"); for(const k in PHRASES) if(!lacks(v,{p:k})) f.push(clipUrl(v,{p:k}));
   if(v.joined) for(const k of JOINED) if(!lacks(v,{p:k})) for(const l of LETTERS) f.push(v.dir+"prompts/"+k+"_"+l+".mp3");
-  for(const n of NUMS) f.push(v.dir+"numbers/"+n+".mp3"); if(v.joined&&!lacks(v,{p:"find_number"})) for(const n of NUMS) f.push(v.dir+"prompts/find_number_"+n+".mp3");
-  if(v.joined) for(const n of NUMS){ const k=numArt(n); if(!lacks(v,{p:k})) f.push(v.dir+"prompts/"+k+"_"+n+".mp3"); } // wrong-number feedback ("Nope, that's a" + 7)
+  for(const n of NUMS) f.push(vp(v,"numbers/"+n+".mp3")); if(v.joined&&!lacks(v,{p:"find_number"})) for(const n of NUMS) f.push(vp(v,"prompts/find_number_"+n+".mp3"));
+  if(v.joined) for(const n of NUMS){ const k=numArt(n); if(!lacks(v,{p:k})) f.push(vp(v,"prompts/"+k+"_"+n+".mp3")); } // wrong-number feedback ("Nope, that's a" + 7)
   return f; }
 const vLog=[]; // which files / speech actually played (checked by the tests)
 function logV(x){ vLog.push(x); if(vLog.length>400) vLog.splice(0,200); }
