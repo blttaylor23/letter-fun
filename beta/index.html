@@ -437,16 +437,16 @@ function hush(){
   return busy;
 }
 function speak(text){
-  const cb=sayCb; // v19: whoever waits for this utterance hears when it ends
+  const cb=sayCb, tok=vGen; // v19: whoever waits for this utterance hears when it ends // v33: tok = the prompt this speech belongs to
   if(!synth||typeof SpeechSynthesisUtterance==="undefined"){ saidEnd(cb); return; }
   const justCancelled=hush()||Date.now()-cancelAt<150;
-  const go=()=>{ speakT=null; try{
+  const go=()=>{ speakT=null; if(tok!==vGen){ logV("stale-tts-dropped:"+text); return; } try{
     const u=new SpeechSynthesisUtterance(text);
     if(voice) u.voice=voice;
     u.rate=spd().tts; u.pitch=1.3; u.volume=0.9; u.lang="en-US";
     spokeOnce=true; lastUtter=u; logV("tts:"+text); // keep a reference: Safari drops end events for garbage-collected utterances
     u.onend=u.onerror=()=>{ if(lastUtter===u){ lastUtter=null; clearTimeout(speechWatchT); speechWatchT=null; } saidEnd(cb); };
-    u.onstart=()=>saidStart(cb,0);
+    u.onstart=()=>{ if(tok!==vGen){ staleSpeech(text); return; } saidStart(cb,0); }; // v33: iOS can start an utterance it was told to cancel
     if(synth.paused) synth.resume(); // iOS can come back from the background "paused"
     synth.speak(u);
     // watchdog: our phrases are short; if the engine is still "speaking" long after, it is wedged -> reset it
@@ -462,10 +462,10 @@ const CLIPS={}; let clip=null;
 function getClip(l){ if(!CLIPS[l]){ const a=new Audio(ROOT+"sounds/"+l+".mp3"); a.preload="auto"; CLIPS[l]=a; } return CLIPS[l]; }
 function stopClip(){ if(clip){ try{clip.pause(); clip.currentTime=0;}catch(e){} clip=null; } }
 function playSound(l){
-  hush(); stopClip(); const cb=sayCb;
+  hush(); stopClip(); const cb=sayCb, tok=vGen;
   try{
     clip=getClip(l); const me=clip;
-    me.onended=me.onerror=()=>{ if(clip===me) saidEnd(cb); }; me.onplaying=()=>{ if(clip===me) saidStart(cb,me.duration/spd().clip); };
+    me.onended=me.onerror=()=>{ if(clip===me) saidEnd(cb); }; me.onplaying=()=>{ if(clip!==me||tok!==vGen){ try{ me.pause(); }catch(e){} logV("stale-clip-blocked:"+l); return; } saidStart(cb,me.duration/spd().clip); };
     try{clip.currentTime=0;}catch(e){}
     try{ clip.preservesPitch=true; clip.webkitPreservesPitch=true; clip.mozPreservesPitch=true;
       clip.defaultPlaybackRate=spd().clip; clip.playbackRate=spd().clip; }catch(e){}
@@ -537,10 +537,19 @@ if(vA) vA.preload="auto";
 let vGen=0, vGapT=null, vWatchT=null;
 const CLIP_GAP_MS=10; // pause between clips of one utterance ("Find the letter" + "B"); the clips themselves are trimmed tight
 function vRate(){ try{ vA.preservesPitch=true; vA.webkitPreservesPitch=true; vA.mozPreservesPitch=true; vA.defaultPlaybackRate=spd().clip; vA.playbackRate=spd().clip; }catch(e){} }
+// v33: vGen is the prompt token. Every new utterance (and so every letter change, Skip, case toggle, 🔊 tap) bumps it
+// here; every clip / speech callback checks it and drops itself when it belongs to an older prompt. vWant = the one clip
+// the current utterance is waiting for: if the element ever starts playing anything else (a stale clip that was
+// still loading), the 'playing' guard below stops it at once.
+let vWant=null;
 function stopVoice(){
-  vGen++; clearTimeout(vGapT); clearTimeout(vWatchT); vGapT=vWatchT=null;
-  if(vA) try{ vA.onended=vA.onerror=vA.onplaying=null; vA.pause(); }catch(e){}
+  vGen++; clearTimeout(vGapT); clearTimeout(vWatchT); vGapT=vWatchT=null; vWant=null;
+  if(vA) try{ vA.onended=vA.onerror=vA.onplaying=null; vA.pause();
+    if(vA.getAttribute("src")){ vA.removeAttribute("src"); vA.load(); } }catch(e){} // detach: a clip still loading can never start later
 }
+function sameSrc(url){ try{ return !!vA.currentSrc&&new URL(url,location.href).href===vA.currentSrc||vA.src===new URL(url,location.href).href; }catch(e){ return false; } }
+if(vA) vA.addEventListener("playing",()=>{ if(!vWant||vWant.tok!==vGen||!sameSrc(vWant.url)){ try{ vA.pause(); }catch(e){} logV("stale-clip-blocked:"+(vA.currentSrc||vA.src)); } });
+function staleSpeech(text){ logV("stale-tts-blocked:"+text); try{ synth.cancel(); cancelAt=Date.now(); }catch(e){} }
 // warm the cache for clips we are about to need (a failed fetch just means it loads on demand)
 const warmed=new Set();
 function preloadParts(parts){
@@ -581,26 +590,26 @@ function utter(parts,cb){
         const u=new SpeechSynthesisUtterance(text); if(voice) u.voice=voice;
         u.rate=spd().tts; u.pitch=1.3; u.volume=0.9; u.lang="en-US"; spokeOnce=true; lastUtter=u; logV("tts:"+text);
         u.onend=u.onerror=()=>{ if(lastUtter===u){ lastUtter=null; clearTimeout(speechWatchT); speechWatchT=null; } finishPart(); };
-        u.onstart=()=>saidStart(cb,Math.max(.7,text.split(/\s+/).length*.32)/spd().tts);
+        u.onstart=()=>{ if(gen!==vGen){ staleSpeech(text); return; } saidStart(cb,Math.max(.7,text.split(/\s+/).length*.32)/spd().tts); };
         if(synth.paused) synth.resume(); synth.speak(u);
         speechWatchT=setTimeout(()=>{ try{ if(lastUtter===u&&(synth.speaking||synth.pending)) synth.cancel(); }catch(e){} lastUtter=null; finishPart(); },Math.round(9000*spd().wait));
       }catch(e){ finishPart(); }
       return; }
-    const fail=()=>{ if(gen!==vGen||over) return; over=true; logV("fail:"+url);
+    const fail=()=>{ if(gen!==vGen||over) return; over=true; logV("fail:"+url); if(vWant&&vWant.url===url) vWant=null;
       try{ if(NEWKIND.test(url)&&vA.error) missing.add(url); }catch(e){}
       if(parts[i].j){ clearTimeout(vWatchT); parts=parts.slice(0,i).concat(parts[i].alt,parts.slice(i+1)); vGapT=setTimeout(step,0); return; } // joined clip missing -> the separate clips (next task: WebKit aborts a play() started inside the error event)
       const rest=parts.slice(i); stopVoice(); computerSay(rest.map(x=>x.j?x.alt:[x]).flat()); };
-    const done=()=>{ if(gen!==vGen||over) return; over=true; clearTimeout(vWatchT); i++;
+    const done=()=>{ if(gen!==vGen||over) return; over=true; clearTimeout(vWatchT); vWant=null; i++;
       if(i<parts.length) vGapT=setTimeout(step,Math.round(CLIP_GAP_MS*spd().wait)); else { vA.onended=vA.onerror=vA.onplaying=null; saidEnd(cb); } };
     if(missing.has(url)){ fail(); return; }
     try{
-      vA.onerror=fail; vA.onended=done;
-      vA.onplaying=()=>{ if(gen!==vGen||over||started) return; started=true; clearTimeout(vWatchT);
+      vA.onerror=()=>{ if(sameSrc(url)) fail(); }; vA.onended=()=>{ if(sameSrc(url)) done(); };
+      vA.onplaying=()=>{ if(gen!==vGen||over||started||!sameSrc(url)) return; started=true; clearTimeout(vWatchT);
         const d=(isFinite(vA.duration)&&vA.duration>0)?vA.duration:3; vWatchT=setTimeout(done,Math.round(d/spd().clip*1000+1500));
         saidStart(cb,(isFinite(vA.duration)&&vA.duration>0)?vA.duration/spd().clip:0); };
-      vRate(); vA.src=url; vRate(); logV("play:"+url);
-      const pr=vA.play(); if(pr&&pr.catch) pr.catch(err=>{ if(!(err&&err.name==="AbortError")) fail(); });
-      clearTimeout(vWatchT); vWatchT=setTimeout(()=>{ if(!started) fail(); },2500); // not playing yet (slow / offline) -> speak it instead
+      vWant={tok:gen,url}; vRate(); vA.src=url; vRate(); logV("play:"+url);
+      const pr=vA.play(); if(pr&&pr.catch) pr.catch(err=>{ if(gen===vGen&&!(err&&err.name==="AbortError")) fail(); });
+      clearTimeout(vWatchT); vWatchT=setTimeout(()=>{ if(gen===vGen&&!started) fail(); },2500); // not playing yet (slow / offline) -> speak it instead
     }catch(e){ fail(); }
   };
   step();
@@ -1561,6 +1570,7 @@ function drawPrompt(){ if(mode==="draw"&&dKind==="num"&&dNum!=null){ utter([{p:"
   utter([{p:dCase==="upper"?"draw_upper":"draw_lower"},{n:dLetter}]); }
 function nextDraw(){
   if(mode!=="draw") return;
+  quiet(); // v33: new letter = new prompt token: nothing said for the old letter can play from here on
   stopDemo(); clearWait(dNextT); dNextT=null; clearWait(dDemoH); dDemoH=null; dPassed=false; dPassedAt=0; dYay.classList.remove("on");
   if(dKind==="num"){ dNum=pickDrawNum(); dRetries=0; window.__drawNum=dNum;
     layoutDraw(); drawGuide(); clearInk(); preloadParts([{num:dNum},...yesParts([{p:"yes_great_job"}]),{p:"try_again"}]); drawPrompt(); return; }
